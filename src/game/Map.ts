@@ -23,13 +23,13 @@ export const MAP_LAYOUT: MapGrid = [
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-  [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-  [2, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 2, 2],
-  [1, 1, 1, 1, 0, 1, 0, 1, 1, 4, 4, 4, 1, 1, 0, 1, 0, 1, 1, 1, 1],
-  [2, 2, 2, 2, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0, 0, 2, 2, 2, 2],
-  [1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1],
-  [2, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 2, 2],
-  [1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1],
+  [1, 1, 1, 1, 0, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+  [2, 2, 2, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 2, 2, 2], // Entrata Tunnel Sinistra
+  [1, 1, 1, 1, 0, 1, 2, 1, 1, 4, 4, 4, 1, 1, 2, 1, 0, 1, 1, 1, 1],
+  [2, 2, 2, 2, 0, 2, 2, 1, 2, 2, 2, 2, 2, 1, 2, 2, 0, 2, 2, 2, 2], // RIGA 10: TUNNEL APERTO
+  [1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1],
+  [2, 2, 2, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 2, 2, 2], // Entrata Tunnel Destra
+  [1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1],
   [1, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 1],
@@ -55,7 +55,7 @@ export const CANVAS_HEIGHT: number = MAP_HEIGHT * TILE_SIZE;
 export class GameMap implements Renderable {
   /** Griglia corrente del gioco (può essere modificata) */
   private grid: MapGrid;
-  
+
   /** Numero totale di palline all'inizio del livello */
   public totalDots: number;
 
@@ -173,7 +173,7 @@ export class GameMap implements Renderable {
   private renderWall(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     ctx.fillStyle = '#1a1aff';
     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-    
+
     // Bordo più scuro per effetto 3D
     ctx.strokeStyle = '#0000aa';
     ctx.lineWidth = 1;
@@ -202,7 +202,7 @@ export class GameMap implements Renderable {
   private renderPowerPellet(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const time = Date.now() / 200;
     const scale = 0.8 + Math.sin(time) * 0.2;
-    
+
     ctx.fillStyle = '#ffff00';
     ctx.beginPath();
     ctx.arc(

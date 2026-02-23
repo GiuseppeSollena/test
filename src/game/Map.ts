@@ -88,9 +88,14 @@ export class GameMap implements Renderable {
    * @returns Valore della tile o WALL se fuori dai limiti
    */
   public getTile(x: number, y: number): TileType {
-    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
-      return TileType.WALL; // Considera fuori mappa come muro
+    // Se siamo fuori verticalmente, è un muro
+    if (y < 0 || y >= MAP_HEIGHT) return TileType.WALL;
+
+    // Se siamo fuori orizzontalmente (zona tunnel), permettiamo il passaggio
+    if (x < 0 || x >= MAP_WIDTH) {
+      return TileType.EMPTY; // <--- Cambiato da WALL a EMPTY
     }
+
     return this.grid[y][x];
   }
 

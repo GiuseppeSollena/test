@@ -83,16 +83,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreChange, onStateChange })
 
         // --- LOGICA SCREEN WRAP (TUNNEL) ---
         // Se esce completamente a sinistra, riappare a destra
-        console.log('Posizione prima del tunnel:', pos.current.x);
-        console.log(`canvas_width: ${CANVAS_WIDTH}, tile_size: ${TILE_SIZE}`);
-        console.log('Controllo tunnel:', pos.current.x < -TILE_SIZE, pos.current.x > CANVAS_WIDTH + TILE_SIZE);
-        if (pos.current.x < -TILE_SIZE) {
-          console.log('Tunnel: da sinistra a destra');
+        if (pos.current.x < 0) {
+          // Se il centro supera lo 0 a sinistra, riappare a destra
           pos.current.x = CANVAS_WIDTH;
         }
-        // Se esce completamente a destra, riappare a sinistra
-        else if (pos.current.x > CANVAS_WIDTH + TILE_SIZE) {
-          console.log('Tunnel: da destra a sinistra');
+        else if (pos.current.x > CANVAS_WIDTH) {
+          // Se il centro supera il bordo destro, riappare a sinistra
           pos.current.x = 0;
         }
 

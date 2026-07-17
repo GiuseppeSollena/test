@@ -12,9 +12,9 @@
     background: #111; color: white;
     overflow: hidden;
   }
-  #app { position: relative; width: 100%; height: 100vh; }
+  #app { position: relative; width: 100%; height: 100vh; height: 100dvh; }
 
-  .screen { position: absolute; inset: 0; display: none; }
+  .screen { position: absolute; inset: 0; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .screen.active { display: flex; }
 
   /* ---------- PROGRESS BAR (comune a più schermate) ---------- */
@@ -71,43 +71,49 @@
   #arrived-panel {
     position: absolute; inset: 0;
     display: none; align-items: center; justify-content: center;
-    background: rgba(10, 14, 24, 0.9);
-    text-align: center; padding: 24px;
+    background: rgba(10, 14, 24, 0.92);
+    text-align: center; padding: 20px;
   }
   #arrived-panel.active { display: flex; }
-  #arrived-panel .inner { max-width: 300px; }
-  #arrived-panel .pulse-icon { font-size: 46px; margin-bottom: 10px; animation: pulse 1.4s ease-in-out infinite; }
+  #arrived-panel .inner {
+    width: 100%; max-width: 380px;
+    background: rgba(26, 32, 53, 0.97);
+    border-radius: 20px;
+    padding: clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #arrived-panel .pulse-icon { font-size: clamp(40px, 12vw, 56px); margin-bottom: 10px; animation: pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
   /* ---------- FOTOCAMERA ---------- */
-  #screen-camera { inset: 0; }
+  #screen-camera { inset: 0; overflow: hidden; }
   #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   #treasure {
     position: absolute;
     top: 50%; left: 50%;
-    width: 110px; height: 110px;
-    margin-left: -55px; margin-top: -55px;
-    font-size: 90px;
+    width: clamp(180px, 55vmin, 300px);
+    height: clamp(180px, 55vmin, 300px);
+    font-size: clamp(148px, 44vmin, 240px);
     display: flex; align-items: center; justify-content: center;
     animation: float 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px gold);
+    filter: drop-shadow(0 0 28px gold);
     z-index: 3;
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
   @keyframes float {
-    0%,100% { transform: translateY(0px) scale(1); }
-    50% { transform: translateY(-15px) scale(1); }
+    0%,100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, calc(-50% - 18px)) scale(1); }
   }
   #treasure.collecting {
     animation: collect 0.7s ease-out forwards;
     pointer-events: none;
   }
   @keyframes collect {
-    0%   { transform: translateY(0) scale(1); opacity: 1; }
-    40%  { transform: translateY(-30px) scale(1.4) rotate(15deg); opacity: 1; }
-    100% { transform: translateY(-70px) scale(0.2) rotate(35deg); opacity: 0; }
+    0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    40%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.4) rotate(15deg); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 80px)) scale(0.2) rotate(35deg); opacity: 0; }
   }
   #collect-sparkle {
     position: absolute;
@@ -156,12 +162,22 @@
 
   /* ---------- SCHERMATA "TAPPA COMPLETATA" ---------- */
   #screen-stop-complete {
+    flex-direction: column;
     align-items: center; justify-content: center;
-    background: #111726;
+    background: radial-gradient(circle at 50% 30%, #1a2a1a 0%, #111726 70%);
     text-align: center;
-    padding: 24px;
+    padding: 20px;
+    min-height: 100%;
   }
-  #stop-complete-icon { font-size: 60px; margin-bottom: 14px; }
+  .stop-complete-card {
+    width: 100%; max-width: 440px;
+    background: #1a2035;
+    border-radius: 20px;
+    padding: clamp(28px, 7vw, 44px) clamp(20px, 6vw, 36px);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #stop-complete-icon { font-size: clamp(64px, 18vw, 90px); line-height: 1; }
 
   /* ---------- SCHERMATA FINALE ---------- */
   #screen-finished {
@@ -169,20 +185,30 @@
     align-items: center; justify-content: center;
     background: linear-gradient(160deg, #1c1408 0%, #2a1f0d 100%);
     text-align: center;
-    padding: 24px;
+    padding: 20px;
+    min-height: 100%;
+  }
+  .finished-card {
+    width: 100%; max-width: 440px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    padding: clamp(28px, 7vw, 44px) clamp(20px, 6vw, 36px);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   #finished-collection {
-    display: flex; gap: 14px; margin: 18px 0 6px;
-    font-size: 34px;
+    display: flex; gap: clamp(10px, 3vw, 18px); margin: 8px 0 4px;
+    font-size: clamp(28px, 9vw, 44px); flex-wrap: wrap; justify-content: center;
   }
 
   /* ---------- Elementi comuni ---------- */
-  .panel { background: #1c1c1c; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; }
-  h1, h2 { font-size: 18px; margin: 0 0 12px; }
-  p { font-size: 14px; line-height: 1.5; color: #ccc; margin: 8px 0; }
+  .panel { background: #1c1c1c; border-radius: 16px; padding: clamp(20px, 5vw, 28px) clamp(18px, 5vw, 28px); max-width: 440px; width: 100%; }
+  h1, h2 { font-size: clamp(17px, 5vw, 22px); margin: 0 0 10px; }
+  p { font-size: clamp(13px, 3.8vw, 15px); line-height: 1.55; color: #ccc; margin: 6px 0; }
   button {
-    width: 100%; padding: 13px; border-radius: 8px; border: none;
-    font-size: 15px; font-weight: 600; margin-top: 10px; cursor: pointer;
+    width: 100%; padding: 15px 16px; border-radius: 10px; border: none;
+    font-size: clamp(15px, 4vw, 17px); font-weight: 600; margin-top: 10px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
   .btn-primary { background: #f5a623; color: #111; }
   .btn-secondary { background: #333; color: white; }
@@ -242,18 +268,22 @@
 
   <!-- ===== TAPPA COMPLETATA ===== -->
   <div id="screen-stop-complete" class="screen">
-    <div id="stop-complete-icon"></div>
-    <h2 id="stop-complete-title"></h2>
-    <p id="stop-complete-text"></p>
-    <button class="btn-primary" id="btn-next-stop" style="max-width:280px;">Vai alla tappa successiva</button>
+    <div class="stop-complete-card">
+      <div id="stop-complete-icon"></div>
+      <h2 id="stop-complete-title"></h2>
+      <p id="stop-complete-text"></p>
+      <button class="btn-primary" id="btn-next-stop">Vai alla tappa successiva</button>
+    </div>
   </div>
 
   <!-- ===== PERCORSO COMPLETATO ===== -->
   <div id="screen-finished" class="screen">
-    <h1>🎉 Percorso completato!</h1>
-    <p>Hai trovato tutti gli oggetti nascosti:</p>
-    <div id="finished-collection"></div>
-    <button class="btn-primary" id="btn-restart" style="max-width:280px;">Ricomincia</button>
+    <div class="finished-card">
+      <h1>🎉 Percorso completato!</h1>
+      <p>Hai trovato tutti gli oggetti nascosti:</p>
+      <div id="finished-collection"></div>
+      <button class="btn-primary" id="btn-restart">Ricomincia</button>
+    </div>
   </div>
 
 </div>
@@ -271,10 +301,10 @@ const CONFIG = {
 };
 
 let stops = [
-  { lat: null, lng: null, emoji: '💎', label: 'Tappa 1 — la Gemma' },
-  { lat: null, lng: null, emoji: '🗝️', label: 'Tappa 2 — la Chiave' },
-  { lat: null, lng: null, emoji: '📜', label: 'Tappa 3 — la Mappa antica' },
-  { lat: 45.527631819396646, lng: 9.387057991402, emoji: '👑', label: 'Tappa 4 — la Corona' },
+  { lat: 45.527796407711854, lng: 9.385064064712813, emoji: '💎', label: 'Tappa 1 — la Gemma' },
+  { lat: 45.52177514332835, lng: 9.362071733018423, emoji: '🗝️', label: 'Tappa 2 — la Chiave' },
+  { lat: 45.52145686161298, lng:  9.330890019874266, emoji: '📜', label: 'Tappa 3 — la Mappa antica' },
+  { lat: 45.517441207798136, lng: 9.297855618026784, emoji: '👑', label: 'Tappa 4 — la Corona' },
 ];
 
 let state = {

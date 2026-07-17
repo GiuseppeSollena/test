@@ -3,51 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Test AR Basic</title>
+    <title>Caccia al Tesoro AR - Casa Mia</title>
     
-    <!-- Librerie A-Frame e AR.js per la realtà aumentata -->
+    <!-- Librerie per Realtà Aumentata -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        header {
+            background-color: #1e1e1e;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #ff9f1c;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #ff9f1c;
+        }
+
+        #map-view {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+
+        .map-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .map-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 2px solid #333;
+            border-radius: 8px;
+            opacity: 0.9;
+        }
+
+        .pin {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-color: #ff9f1c;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #121212;
+        }
+
+        #control-panel {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-top: 2px solid #333;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: #2ec4b6;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 280px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* CONTAINER AR */
+        #ar-view-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+        }
+
+        body.ar-open {
+            background-color: #000 !important;
+        }
+
+        body.ar-open > video,
+        body.ar-open > div > video {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            z-index: 1 !important;
+        }
+
+        #ar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .ar-header {
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        .ar-instructions {
+            background: rgba(255, 159, 28, 0.95);
+            color: black;
+            padding: 12px;
+            margin: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .close-ar-btn {
+            background-color: #e71d36;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        #quiz-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 360px;
+            background-color: #1e1e1e;
+            border: 2px solid #2ec4b6;
+            border-radius: 12px;
+            padding: 20px;
+            z-index: 100000;
+        }
+
+        #backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            z-index: 99999;
+        }
+
+        .a-canvas {
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            background: transparent !important;
+            z-index: 2 !important;
+        }
+
+        #ar-scene-slot a-scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
-<body style="margin: 0px; overflow: hidden;">
+<body>
 
-    <!-- La scena AR si avvia in automatico usando la webcam -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; videoTexture: true;" vr-mode-ui="enabled: false">
-        
-        <!-- Definiamo il modello 3D (una scatola regalo) preso da internet -->
-        <a-assets>
-            <a-asset-item id="present-model" src="https://raw.githack.com/KhronosGroup/glTF-Sample-Models/master/2.0/GiftBox/glTF-Binary/GiftBox.glb"></a-asset-item>
-        </a-assets>
+    <div id="app-container">
+        <header>
+            <h1>CACCIA AL TESORO AR</h1>
+            <p id="game-status">Tappa 1 di 2: Trova il primo indizio</p>
+        </header>
 
-        <!-- PUNTO 5: Questo nodo dice ad AR.js di cercare il foglio "Hiro".
-             Quando lo trova, posiziona l'oggetto 3D sopra di esso. -->
-        <a-marker id="mio-marker" preset="hiro">
-            <a-entity 
-                gltf-model="#present-model" 
-                scale="0.8 0.8 0.8" 
-                position="0 0 0"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 4000">
-            </a-entity>
-        </a-marker>
+        <div id="map-view">
+            <div class="map-wrapper">
+                <img src="piantina.jpg" alt="Piantina" class="map-image" id="floorplan">
+                <div id="pin-1" class="pin" style="left: 35%; top: 22%;">1</div>
+            </div>
+        </div>
 
-        <!-- La telecamera virtuale che proietta il 3D sopra la realtà -->
-        <a-entity camera></a-entity>
+        <div id="control-panel">
+            <p style="margin-bottom: 15px; font-weight: bold; color: #ff9f1c;">
+                🔍 Indizio: Inquadra il marker Hiro per far apparire un cubo rosso!
+            </p>
+            <button id="open-cam-btn" class="btn">APRI FOTOCAMERA AR</button>
+        </div>
+    </div>
 
-    </a-scene>
+    <div id="ar-view-container">
+        <div id="ar-overlay">
+            <div class="ar-header">
+                <span style="font-weight: bold; color: #2ec4b6; font-size: 1.1rem; display: block;">INQUADRA IL MARKER HIRO</span>
+                <button class="close-ar-btn" onclick="closeAR()">TORNA ALLA MAPPA</button>
+            </div>
+            <div class="ar-instructions">
+                Mostra alla fotocamera il marker Hiro!
+            </div>
+        </div>
 
-    <!-- PUNTO 6: Il codice JavaScript che "ascolta" la fotocamera -->
+        <div id="ar-scene-slot" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+    </div>
+
+    <div id="backdrop"></div>
+    <div id="quiz-modal" style="text-align: center; padding: 20px;">
+        <h2 style="color: #2ec4b6; margin-top: 0;">🎉 Tappa Sbloccata!</h2>
+        <p>Il codice JavaScript ha rilevato con successo il marker Hiro!</p>
+        <button class="btn" onclick="closeQuiz()" style="margin-top: 15px;">OK</button>
+    </div>
+
     <script>
-        // Selezioniamo l'elemento del marker nel codice
-        const marker = document.getElementById('mio-marker');
-
-        // Questo evento si attiva nell'esatto millisecondo in cui la fotocamera riconosce il foglio
-        marker.addEventListener('markerFound', () => {
-            console.log("Marker trovato!");
+        // Abbiamo rimosso del tutto <a-assets> per evitare qualsiasi blocco di caricamento all'avvio!
+        // Usiamo un <a-box> (un cubo 3D nativo di A-Frame) che non richiede download esterni.
+        const AR_SCENE_HTML = `
+        <a-scene embedded
+            arjs="sourceType: webcam; debugUIEnabled: false;"
+            renderer="alpha: true; antialias: true;"
+            vr-mode-ui="enabled: false">
             
-            // Facciamo apparire un avviso immediato per dimostrare che l'app ha capito dove ti trovi
-            alert("🎉 Tappa 1 Sbloccata! Hai trovato il regalo del Grinch!");
-        });
-    </script>
+            <a-marker id="marker-tappa-1" preset="hiro">
+                <!-- Un semplice cubo rosso che gira, leggerissimo e nativo -->
+                <a-box position="0 0.5 0" material="color: red; opacity: 0.8;" 
+                       animation="property: rotation; to: 0 360 360; loop: true; dur: 3000"></a-box>
+            </a-marker>
+            
+            <a-entity camera></a-entity>
+        </a-scene>`;
 
+        const openCamBtn = document.getElementById('open-cam-btn');
+        const arViewContainer = document.getElementById('ar-view-container');
+        const arSceneSlot = document.getElementById('ar-scene-slot');
+        const appContainer = document.getElementById('app-container');
+        const quizModal = document.getElementById('quiz-modal');
+        const backdrop = document.getElementById('backdrop');
+
+        openCamBtn.addEventListener('click', async () => {
+            try {
+                // Chiediamo prima i permessi
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop());
+
+                // Avviamo l'AR
+                appContainer.style.display = 'none';
+                document.body.classList.add('ar-open');
+                arViewContainer.style.display = 'block';
+
+                if (!arSceneSlot.querySelector('a-scene')) {
+                    arSceneSlot.innerHTML = AR_SCENE_HTML;
+                    setTimeout(attachMarkerListeners, 300);
+                }
+            } catch (err) {
+                console.error("Errore fotocamera:", err);
+                alert("Consenti l'uso della fotocamera per avviare il gioco!");
+            }
+        });
+
+        function attachMarkerListeners() {
+            const markerEl = document.getElementById('marker-tappa-1');
+            if (markerEl) {
+                markerEl.addEventListener('markerFound', () => {
+                    triggerQuiz();
+                });
+            }
+        }
+
+        function closeAR() {
+            document.querySelectorAll('video').forEach(v => {
+                if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+                v.remove();
+            });
+            arSceneSlot.innerHTML = '';
+            arViewContainer.style.display = 'none';
+            document.body.classList.remove('ar-open');
+            appContainer.style.display = 'flex';
+        }
+
+        function triggerQuiz() {
+            closeAR();
+            backdrop.style.display = 'block';
+            quizModal.style.display = 'block';
+        }
+
+        function closeQuiz() {
+            backdrop.style.display = 'none';
+            quizModal.style.display = 'none';
+        }
+    </script>
 </body>
 </html>

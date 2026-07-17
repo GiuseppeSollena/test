@@ -1,13 +1,53 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pac-Man - React + Canvas</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Test AR Basic</title>
+    
+    <!-- Librerie A-Frame e AR.js per la realtà aumentata -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin: 0px; overflow: hidden;">
+
+    <!-- La scena AR si avvia in automatico usando la webcam -->
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; videoTexture: true;" vr-mode-ui="enabled: false">
+        
+        <!-- Definiamo il modello 3D (una scatola regalo) preso da internet -->
+        <a-assets>
+            <a-asset-item id="present-model" src="https://raw.githack.com/KhronosGroup/glTF-Sample-Models/master/2.0/GiftBox/glTF-Binary/GiftBox.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- PUNTO 5: Questo nodo dice ad AR.js di cercare il foglio "Hiro".
+             Quando lo trova, posiziona l'oggetto 3D sopra di esso. -->
+        <a-marker id="mio-marker" preset="hiro">
+            <a-entity 
+                gltf-model="#present-model" 
+                scale="0.8 0.8 0.8" 
+                position="0 0 0"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 4000">
+            </a-entity>
+        </a-marker>
+
+        <!-- La telecamera virtuale che proietta il 3D sopra la realtà -->
+        <a-entity camera></a-entity>
+
+    </a-scene>
+
+    <!-- PUNTO 6: Il codice JavaScript che "ascolta" la fotocamera -->
+    <script>
+        // Selezioniamo l'elemento del marker nel codice
+        const marker = document.getElementById('mio-marker');
+
+        // Questo evento si attiva nell'esatto millisecondo in cui la fotocamera riconosce il foglio
+        marker.addEventListener('markerFound', () => {
+            console.log("Marker trovato!");
+            
+            // Facciamo apparire un avviso immediato per dimostrare che l'app ha capito dove ti trovi
+            alert("🎉 Tappa 1 Sbloccata! Hai trovato il regalo del Grinch!");
+        });
+    </script>
+
+</body>
 </html>

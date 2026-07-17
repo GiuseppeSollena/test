@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Caccia al tesoro GPS — Percorso a tappe</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, Roboto, sans-serif;
+    background: #111; color: white;
+    overflow: hidden;
+  }
+  #app { position: relative; width: 100%; height: 100vh; }
+
+  .screen { position: absolute; inset: 0; display: none; }
+  .screen.active { display: flex; }
+
+  /* ---------- PROGRESS BAR (comune a più schermate) ---------- */
+  #progress-bar {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px;
+    z-index: 10;
+  }
+  .progress-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #3a4257;
+    transition: background 0.3s;
+  }
+  .progress-dot.done { background: #f5a623; }
+  .progress-dot.current { background: white; box-shadow: 0 0 0 3px rgba(245,166,35,0.4); }
+
+  /* ---------- SETUP ---------- */
+  #screen-setup { align-items: center; justify-content: center; padding: 24px; background: #111; }
+
+  /* ---------- NAVIGAZIONE ---------- */
+  #screen-navigate {
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #2a3550 0%, #111726 70%);
+    position: relative;
+  }
+  #nav-stop-label { font-size: 12px; color: #f5a623; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  #nav-distance { font-size: 15px; font-weight: 600; color: #ddd; margin-bottom: 6px; }
+  #nav-accuracy { font-size: 11px; color: #8891a3; margin-bottom: 26px; }
+  #nav-arrow-wrap { width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
+  #nav-arrow {
+    width: 140px; height: 140px;
+    transform: rotate(0deg);
+    transition: transform 0.15s ease-out;
+    filter: drop-shadow(0 4px 14px rgba(245,166,35,0.45));
+  }
+  #nav-hint { margin-top: 22px; font-size: 13px; color: #aab2c5; text-align: center; max-width: 280px; line-height: 1.5; }
+  #nav-compass-warning { margin-top: 12px; font-size: 11px; color: #e0a030; text-align: center; max-width: 280px; display: none; }
+  #btn-debug-set-here {
+    margin-top: 18px;
+    background: transparent;
+    color: #6b7690;
+    border: 1px dashed #3a4257;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 12px;
+    width: auto;
+  }
+
+  /* ---------- PANNELLO "ARRIVATO" ---------- */
+  #arrived-panel {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(10, 14, 24, 0.9);
+    text-align: center; padding: 24px;
+  }
+  #arrived-panel.active { display: flex; }
+  #arrived-panel .inner { max-width: 300px; }
+  #arrived-panel .pulse-icon { font-size: 46px; margin-bottom: 10px; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+  /* ---------- FOTOCAMERA ---------- */
+  #screen-camera { inset: 0; }
+  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #treasure {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 110px; height: 110px;
+    margin-left: -55px; margin-top: -55px;
+    font-size: 90px;
+    display: flex; align-items: center; justify-content: center;
+    animation: float 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px gold);
+    z-index: 3;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-15px) scale(1); }
+  }
+  #treasure.collecting {
+    animation: collect 0.7s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes collect {
+    0%   { transform: translateY(0) scale(1); opacity: 1; }
+    40%  { transform: translateY(-30px) scale(1.4) rotate(15deg); opacity: 1; }
+    100% { transform: translateY(-70px) scale(0.2) rotate(35deg); opacity: 0; }
+  }
+  #collect-sparkle {
+    position: absolute;
+    top: 50%; left: 50%;
+    font-size: 28px;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 4;
+    pointer-events: none;
+  }
+  #collect-sparkle.show {
+    display: block;
+    animation: sparkle-burst 0.7s ease-out forwards;
+  }
+  @keyframes sparkle-burst {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2) translateY(-40px); }
+  }
+  #camera-tap-hint {
+    position: absolute;
+    top: 46px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(46, 139, 87, 0.85);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 3;
+    text-align: center;
+  }
+  #camera-leaving-warning {
+    position: absolute;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(200, 60, 40, 0.85);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    z-index: 3;
+    display: none;
+    text-align: center;
+    max-width: 85%;
+  }
+
+  /* ---------- SCHERMATA "TAPPA COMPLETATA" ---------- */
+  #screen-stop-complete {
+    align-items: center; justify-content: center;
+    background: #111726;
+    text-align: center;
+    padding: 24px;
+  }
+  #stop-complete-icon { font-size: 60px; margin-bottom: 14px; }
+
+  /* ---------- SCHERMATA FINALE ---------- */
+  #screen-finished {
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #1c1408 0%, #2a1f0d 100%);
+    text-align: center;
+    padding: 24px;
+  }
+  #finished-collection {
+    display: flex; gap: 14px; margin: 18px 0 6px;
+    font-size: 34px;
+  }
+
+  /* ---------- Elementi comuni ---------- */
+  .panel { background: #1c1c1c; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; }
+  h1, h2 { font-size: 18px; margin: 0 0 12px; }
+  p { font-size: 14px; line-height: 1.5; color: #ccc; margin: 8px 0; }
+  button {
+    width: 100%; padding: 13px; border-radius: 8px; border: none;
+    font-size: 15px; font-weight: 600; margin-top: 10px; cursor: pointer;
+  }
+  .btn-primary { background: #f5a623; color: #111; }
+  .btn-secondary { background: #333; color: white; }
+  #status-line { font-size: 12px; color: #888; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="progress-bar"></div>
+
+  <!-- ===== SETUP ===== -->
+  <div id="screen-setup" class="screen active">
+    <div class="panel">
+      <h1>Caccia al tesoro — 4 tappe</h1>
+      <p>
+        Un percorso con 4 oggetti nascosti in punti diversi. Trovi il primo,
+        lo raccogli con un tocco, e si sblocca la ricerca del successivo.
+      </p>
+      <button class="btn-secondary" id="btn-start">Inizia il percorso</button>
+      <div id="status-line"></div>
+    </div>
+  </div>
+
+  <!-- ===== NAVIGAZIONE ===== -->
+  <div id="screen-navigate" class="screen">
+    <div id="nav-stop-label"></div>
+    <div id="nav-distance">Calcolo distanza...</div>
+    <div id="nav-accuracy"></div>
+    <div id="nav-arrow-wrap">
+      <svg id="nav-arrow" viewBox="0 0 100 100">
+        <polygon points="50,8 78,72 50,58 22,72" fill="#f5a623" stroke="#111" stroke-width="3"/>
+      </svg>
+    </div>
+    <div id="nav-hint">Segui la freccia: quando sarai abbastanza vicino potrai aprire la fotocamera.</div>
+    <div id="nav-compass-warning">Bussola non disponibile: usa la distanza mostrata sopra come guida.</div>
+    <button id="btn-debug-set-here">Debug: imposta questa tappa sulla mia posizione</button>
+
+    <div id="arrived-panel">
+      <div class="inner">
+        <div class="pulse-icon">📍</div>
+        <h2>Sei arrivato!</h2>
+        <p>Sei nel punto giusto. Apri la fotocamera per scoprire cosa si nasconde qui.</p>
+        <button class="btn-primary" id="btn-open-camera">Apri la fotocamera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOTOCAMERA ===== -->
+  <div id="screen-camera" class="screen">
+    <video id="video" autoplay playsinline muted></video>
+    <div id="camera-tap-hint">Tocca l'oggetto per raccoglierlo</div>
+    <div id="treasure"></div>
+    <div id="collect-sparkle">✨</div>
+    <div id="camera-leaving-warning">Ti stai allontanando: tra poco tornerai alla navigazione.</div>
+  </div>
+
+  <!-- ===== TAPPA COMPLETATA ===== -->
+  <div id="screen-stop-complete" class="screen">
+    <div id="stop-complete-icon"></div>
+    <h2 id="stop-complete-title"></h2>
+    <p id="stop-complete-text"></p>
+    <button class="btn-primary" id="btn-next-stop" style="max-width:280px;">Vai alla tappa successiva</button>
+  </div>
+
+  <!-- ===== PERCORSO COMPLETATO ===== -->
+  <div id="screen-finished" class="screen">
+    <h1>🎉 Percorso completato!</h1>
+    <p>Hai trovato tutti gli oggetti nascosti:</p>
+    <div id="finished-collection"></div>
+    <button class="btn-primary" id="btn-restart" style="max-width:280px;">Ricomincia</button>
+  </div>
+
+</div>
+
+<script>
+// =======================================================
+// CONFIG: le 4 tappe del percorso.
+// Le coordinate si impostano fisicamente andando nel punto voluto e
+// premendo "Debug: imposta questa tappa sulla mia posizione", oppure
+// scrivendole qui a mano (es. prese da Google Maps).
+// =======================================================
+const CONFIG = {
+  unlockRadiusMeters: 15,
+  exitRadiusMeters: 30,
+};
+
+let stops = [
+  { lat: null, lng: null, emoji: '💎', label: 'Tappa 1 — la Gemma' },
+  { lat: null, lng: null, emoji: '🗝️', label: 'Tappa 2 — la Chiave' },
+  { lat: null, lng: null, emoji: '📜', label: 'Tappa 3 — la Mappa antica' },
+  { lat: 45.527631819396646, lng: 9.387057991402, emoji: '👑', label: 'Tappa 4 — la Corona' },
+];
+
+let state = {
+  watchId: null,
+  cameraStream: null,
+  phase: 'setup', // setup | navigating | arrived | camera | collecting | stopComplete | finished
+  currentHeading: null,
+  currentPosition: null,
+  currentStopIndex: 0,
+  collected: [],
+};
+
+const el = {
+  progressBar: document.getElementById('progress-bar'),
+  screenSetup: document.getElementById('screen-setup'),
+  screenNavigate: document.getElementById('screen-navigate'),
+  screenCamera: document.getElementById('screen-camera'),
+  screenStopComplete: document.getElementById('screen-stop-complete'),
+  screenFinished: document.getElementById('screen-finished'),
+  arrivedPanel: document.getElementById('arrived-panel'),
+  btnStart: document.getElementById('btn-start'),
+  btnOpenCamera: document.getElementById('btn-open-camera'),
+  btnDebugSetHere: document.getElementById('btn-debug-set-here'),
+  btnNextStop: document.getElementById('btn-next-stop'),
+  btnRestart: document.getElementById('btn-restart'),
+  statusLine: document.getElementById('status-line'),
+  navStopLabel: document.getElementById('nav-stop-label'),
+  navDistance: document.getElementById('nav-distance'),
+  navAccuracy: document.getElementById('nav-accuracy'),
+  navArrow: document.getElementById('nav-arrow'),
+  navCompassWarning: document.getElementById('nav-compass-warning'),
+  video: document.getElementById('video'),
+  treasure: document.getElementById('treasure'),
+  collectSparkle: document.getElementById('collect-sparkle'),
+  cameraLeavingWarning: document.getElementById('camera-leaving-warning'),
+  stopCompleteIcon: document.getElementById('stop-complete-icon'),
+  stopCompleteTitle: document.getElementById('stop-complete-title'),
+  stopCompleteText: document.getElementById('stop-complete-text'),
+  finishedCollection: document.getElementById('finished-collection'),
+};
+
+function showScreen(name) {
+  [el.screenSetup, el.screenNavigate, el.screenCamera, el.screenStopComplete, el.screenFinished]
+    .forEach((s) => s.classList.remove('active'));
+  if (name === 'setup') el.screenSetup.classList.add('active');
+  if (name === 'navigate' || name === 'arrived') el.screenNavigate.classList.add('active');
+  if (name === 'camera') el.screenCamera.classList.add('active');
+  if (name === 'stopComplete') el.screenStopComplete.classList.add('active');
+  if (name === 'finished') el.screenFinished.classList.add('active');
+  el.arrivedPanel.classList.toggle('active', name === 'arrived');
+
+  el.progressBar.style.display = (name === 'setup' || name === 'finished') ? 'none' : 'flex';
+}
+
+function renderProgressDots() {
+  el.progressBar.innerHTML = '';
+  stops.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot';
+    if (i < state.currentStopIndex) dot.classList.add('done');
+    if (i === state.currentStopIndex) dot.classList.add('current');
+    el.progressBar.appendChild(dot);
+  });
+}
+
+// --- Geometria ---
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+function bearingTo(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+function updateArrowRotation() {
+  const target = stops[state.currentStopIndex];
+  if (state.currentHeading === null || !state.currentPosition || target.lat === null) return;
+  const bearing = bearingTo(state.currentPosition.lat, state.currentPosition.lng, target.lat, target.lng);
+  const rotation = (bearing - state.currentHeading + 360) % 360;
+  el.navArrow.style.transform = `rotate(${rotation}deg)`;
+}
+
+// --- Bussola ---
+async function enableCompass() {
+  const hasAbsolute = 'ondeviceorientationabsolute' in window;
+  const eventName = hasAbsolute ? 'deviceorientationabsolute' : 'deviceorientation';
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceOrientationEvent.requestPermission();
+      if (response !== 'granted') { el.navCompassWarning.style.display = 'block'; return; }
+    } catch (err) { el.navCompassWarning.style.display = 'block'; return; }
+  }
+
+  let gotReading = false;
+  window.addEventListener(eventName, (event) => {
+    if (typeof event.webkitCompassHeading === 'number') {
+      state.currentHeading = event.webkitCompassHeading; gotReading = true;
+    } else if (event.alpha !== null) {
+      state.currentHeading = (360 - event.alpha) % 360; gotReading = true;
+    }
+    updateArrowRotation();
+  });
+  setTimeout(() => { if (!gotReading) el.navCompassWarning.style.display = 'block'; }, 2500);
+}
+
+// --- Avvio percorso ---
+el.btnStart.addEventListener('click', async () => {
+  if (!navigator.geolocation) { alert('Geolocalizzazione non supportata su questo browser.'); return; }
+
+  await enableCompass();
+
+  state.currentStopIndex = 0;
+  state.collected = [];
+  renderProgressDots();
+  goToNavigatingCurrentStop();
+
+  state.watchId = navigator.geolocation.watchPosition(
+    onPositionUpdate,
+    (err) => { el.navDistance.textContent = 'Errore GPS: ' + err.message; },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+  );
+});
+
+function goToNavigatingCurrentStop() {
+  const stop = stops[state.currentStopIndex];
+  el.navStopLabel.textContent = stop.label;
+  state.phase = 'navigating';
+  showScreen('navigate');
+  renderProgressDots();
+}
+
+// --- Debug: imposta la tappa corrente sulla posizione attuale ---
+el.btnDebugSetHere.addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      stops[state.currentStopIndex].lat = pos.coords.latitude;
+      stops[state.currentStopIndex].lng = pos.coords.longitude;
+      el.navDistance.textContent = 'Tappa impostata qui — avvicinati o attendi la rilevazione.';
+    },
+    (err) => { alert('Errore GPS: ' + err.message); },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
+// --- Aggiornamento continuo posizione ---
+function onPositionUpdate(pos) {
+  state.currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  const target = stops[state.currentStopIndex];
+  if (target.lat === null) return; // tappa non ancora impostata
+
+  const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, target.lat, target.lng);
+  const rounded = Math.round(d);
+
+  if (state.phase === 'navigating' || state.phase === 'arrived') {
+    el.navDistance.textContent = `Distanza dall'oggetto: ${rounded} m`;
+    el.navAccuracy.textContent = `precisione GPS: ±${Math.round(pos.coords.accuracy)} m`;
+    updateArrowRotation();
+  }
+
+  if (state.phase === 'navigating' && d <= CONFIG.unlockRadiusMeters) {
+    state.phase = 'arrived';
+    showScreen('arrived');
+  }
+  if (state.phase === 'arrived' && d > CONFIG.unlockRadiusMeters) {
+    state.phase = 'navigating';
+    showScreen('navigate');
+  }
+
+  if (state.phase === 'camera') {
+    if (d > CONFIG.unlockRadiusMeters && d <= CONFIG.exitRadiusMeters) {
+      el.cameraLeavingWarning.style.display = 'block';
+    } else {
+      el.cameraLeavingWarning.style.display = 'none';
+    }
+    if (d > CONFIG.exitRadiusMeters) closeCameraAndReturnToNavigation();
+  }
+}
+
+// --- Apertura fotocamera ---
+el.btnOpenCamera.addEventListener('click', async () => {
+  try {
+    state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    el.video.srcObject = state.cameraStream;
+  } catch (err) {
+    alert('Permesso fotocamera negato o non disponibile: ' + err.message);
+    return;
+  }
+  const stop = stops[state.currentStopIndex];
+  el.treasure.textContent = stop.emoji;
+  el.treasure.classList.remove('collecting');
+  state.phase = 'camera';
+  showScreen('camera');
+});
+
+function closeCameraAndReturnToNavigation() {
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach((t) => t.stop());
+    state.cameraStream = null;
+  }
+  el.cameraLeavingWarning.style.display = 'none';
+  state.phase = 'navigating';
+  showScreen('navigate');
+}
+
+// --- Raccolta dell'oggetto (tocco sul tesoro) ---
+el.treasure.addEventListener('click', onCollectTreasure);
+el.treasure.addEventListener('touchstart', (e) => { e.preventDefault(); onCollectTreasure(); });
+
+function onCollectTreasure() {
+  if (state.phase !== 'camera') return;
+  state.phase = 'collecting';
+
+  el.treasure.classList.add('collecting');
+  el.collectSparkle.classList.remove('show');
+  void el.collectSparkle.offsetWidth; // forza il replay dell'animazione
+  el.collectSparkle.classList.add('show');
+
+  const stop = stops[state.currentStopIndex];
+  state.collected.push(stop.emoji);
+
+  setTimeout(() => {
+    // Ferma la fotocamera: non serve più per questa tappa
+    if (state.cameraStream) {
+      state.cameraStream.getTracks().forEach((t) => t.stop());
+      state.cameraStream = null;
+    }
+    showStopCompleteScreen(stop);
+  }, 750);
+}
+
+function showStopCompleteScreen(stop) {
+  el.stopCompleteIcon.textContent = stop.emoji;
+  el.stopCompleteTitle.textContent = 'Oggetto trovato!';
+  const isLast = state.currentStopIndex === stops.length - 1;
+  el.stopCompleteText.textContent = isLast
+    ? 'Hai trovato l\'ultimo oggetto del percorso!'
+    : `Hai completato "${stop.label}". Preparati per la prossima tappa.`;
+  el.btnNextStop.textContent = isLast ? 'Vedi il riepilogo finale' : 'Vai alla tappa successiva';
+  state.phase = 'stopComplete';
+  showScreen('stopComplete');
+  renderProgressDots();
+}
+
+el.btnNextStop.addEventListener('click', () => {
+  const isLast = state.currentStopIndex === stops.length - 1;
+  if (isLast) {
+    showFinishedScreen();
+  } else {
+    state.currentStopIndex += 1;
+    goToNavigatingCurrentStop();
+  }
+});
+
+function showFinishedScreen() {
+  el.finishedCollection.innerHTML = '';
+  state.collected.forEach((emoji) => {
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    el.finishedCollection.appendChild(span);
+  });
+  state.phase = 'finished';
+  showScreen('finished');
+}
+
+el.btnRestart.addEventListener('click', () => {
+  stops.forEach((s) => { s.lat = null; s.lng = null; });
+  state.currentStopIndex = 0;
+  state.collected = [];
+  state.phase = 'setup';
+  showScreen('setup');
+});
+</script>
+</body>
+</html>

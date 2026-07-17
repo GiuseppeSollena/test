@@ -1,343 +1,556 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Caccia al Tesoro AR - Casa Mia</title>
-    
-    <!-- Librerie per Realtà Aumentata -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>Caccia al Tesoro AR - Casa Mia</title>
 
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #121212;
-            color: #ffffff;
-            overflow: hidden;
-        }
+  <!-- Librerie per Realtà Aumentata (A-Frame + AR.js) -->
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
-        #app-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100vh;
-            position: relative;
-            z-index: 10;
-        }
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch;
+    }
 
-        header {
-            background-color: #1e1e1e;
-            padding: 15px;
-            text-align: center;
-            border-bottom: 2px solid #ff9f1c;
-        }
+    /* Schermata Principale */
+    #app-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+      z-index: 10;
+    }
 
-        header h1 {
-            margin: 0;
-            font-size: 1.3rem;
-            color: #ff9f1c;
-        }
+    header {
+      background-color: #1e1e1e;
+      padding: 15px;
+      text-align: center;
+      border-bottom: 2px solid #ff9f1c;
+    }
 
-        #map-view {
-            width: 100%;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex: 1;
-        }
+    header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: #ff9f1c;
+    }
 
-        .map-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-        }
+    header p {
+      margin: 5px 0 0 0;
+      font-size: 0.85rem;
+      color: #aaaaaa;
+    }
 
-        .map-image {
-            display: block;
-            width: 100%;
-            height: auto;
-            border: 2px solid #333;
-            border-radius: 8px;
-            opacity: 0.9;
-        }
+    #map-view {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+    }
 
-        .pin {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            background-color: #ff9f1c;
-            border: 2px solid white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-            color: #121212;
-        }
+    .map-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+    }
 
-        #control-panel {
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-top: 2px solid #333;
-            text-align: center;
-        }
+    .map-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 2px solid #333;
+      border-radius: 8px;
+      opacity: 0.9;
+    }
 
-        .btn {
-            background-color: #2ec4b6;
-            color: white;
-            border: none;
-            padding: 15px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            width: 100%;
-            max-width: 280px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
+    .pin {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background-color: #ff9f1c;
+      border: 2px solid white;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: #121212;
+      transition: all 0.3s ease;
+    }
 
-        /* CONTAINER AR */
-        #ar-view-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 9999;
-        }
+    .pin.active {
+      background-color: #2ec4b6;
+      animation: pulse 1.5s infinite;
+    }
 
-        body.ar-open {
-            background-color: #000 !important;
-        }
+    .pin.locked {
+      background-color: #555;
+      border-color: #333;
+      color: #888;
+      cursor: not-allowed;
+    }
 
-        body.ar-open > video,
-        body.ar-open > div > video {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: cover !important;
-            z-index: 1 !important;
-        }
+    .pin.completed {
+      background-color: #4caf50;
+      color: white;
+    }
 
-        #ar-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            pointer-events: none;
-        }
+    @keyframes pulse {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 0 0 rgba(46, 196, 182, 0.7);
+      }
 
-        .ar-header {
-            background: rgba(0,0,0,0.9);
-            padding: 15px;
-            text-align: center;
-            pointer-events: auto;
-        }
+      70% {
+        transform: translate(-50%, -50%) scale(1.2);
+        box-shadow: 0 0 0 8px rgba(46, 196, 182, 0);
+      }
 
-        .ar-instructions {
-            background: rgba(255, 159, 28, 0.95);
-            color: black;
-            padding: 12px;
-            margin: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 0 0 rgba(46, 196, 182, 0);
+      }
+    }
 
-        .close-ar-btn {
-            background-color: #e71d36;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 8px;
-        }
+    #control-panel {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-top: 2px solid #333;
+      text-align: center;
+      margin-top: auto;
+    }
 
-        #quiz-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            max-width: 360px;
-            background-color: #1e1e1e;
-            border: 2px solid #2ec4b6;
-            border-radius: 12px;
-            padding: 20px;
-            z-index: 100000;
-        }
+    #clue-text {
+      margin: 0 0 15px 0;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #ff9f1c;
+    }
 
-        #backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.85);
-            z-index: 99999;
-        }
+    .btn {
+      background-color: #ff9f1c;
+      color: #121212;
+      border: none;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: background-color 0.2s;
+    }
 
-        .a-canvas {
-            position: absolute !important;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            background: transparent !important;
-            z-index: 2 !important;
-        }
+    .btn.active-btn {
+      background-color: #2ec4b6;
+      color: white;
+    }
 
-        #ar-scene-slot a-scene {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+    /* CONTAINER AR */
+    #ar-view-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+    }
+
+    body.ar-open {
+      background-color: #000 !important;
+      overflow: hidden !important;
+    }
+
+    /* Il video creato da AR.js deve stare in cima */
+    body.ar-open>video,
+    body.ar-open>div>video {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 1 !important;
+      opacity: 1 !important;
+      display: block !important;
+    }
+
+    #ar-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .ar-header {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .ar-instructions {
+      background: rgba(255, 159, 28, 0.95);
+      color: black;
+      padding: 12px;
+      margin: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .close-ar-btn {
+      background-color: #e71d36;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    /* Modale del Quiz */
+    #quiz-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 85%;
+      max-width: 360px;
+      background-color: #1e1e1e;
+      border: 2px solid #2ec4b6;
+      border-radius: 12px;
+      padding: 20px;
+      z-index: 100000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    }
+
+    #quiz-modal h2 {
+      margin-top: 0;
+      color: #2ec4b6;
+    }
+
+    .quiz-answers {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .answer-btn {
+      background-color: #2d2d2d;
+      color: white;
+      border: 1px solid #444;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    #backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      z-index: 99999;
+    }
+
+    .a-canvas {
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+      background: transparent !important;
+      z-index: 2 !important;
+    }
+
+    #ar-scene-slot a-scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
+
 <body>
 
-    <div id="app-container">
-        <header>
-            <h1>CACCIA AL TESORO AR</h1>
-            <p id="game-status">Tappa 1 di 2: Trova il primo indizio</p>
-        </header>
+  <!-- INTERFACCIA APPLICAZIONE -->
+  <div id="app-container">
+    <header>
+      <h1>CACCIA AL TESORO AR</h1>
+      <p id="game-status">Tappa 1 di 4: Trova il primo indizio</p>
+    </header>
 
-        <div id="map-view">
-            <div class="map-wrapper">
-                <img src="piantina.jpg" alt="Piantina" class="map-image" id="floorplan">
-                <div id="pin-1" class="pin" style="left: 35%; top: 22%;">1</div>
-            </div>
-        </div>
+    <div id="map-view">
+      <div class="map-wrapper">
+        <img src="piantina.jpg" alt="Piantina Casa Mia" class="map-image" id="floorplan">
 
-        <div id="control-panel">
-            <p style="margin-bottom: 15px; font-weight: bold; color: #ff9f1c;">
-                🔍 Indizio: Inquadra il marker Hiro per far apparire un cubo rosso!
-            </p>
-            <button id="open-cam-btn" class="btn">APRI FOTOCAMERA AR</button>
-        </div>
+        <div id="pin-1" class="pin active" style="left: 35%; top: 22%;">1</div>
+        <div id="pin-2" class="pin locked" style="left: 68%; top: 38%;">2</div>
+        <div id="pin-3" class="pin locked" style="left: 55%; top: 65%;">3</div>
+        <div id="pin-4" class="pin locked" style="left: 32%; top: 72%;">4</div>
+      </div>
     </div>
 
-    <div id="ar-view-container">
-        <div id="ar-overlay">
-            <div class="ar-header">
-                <span style="font-weight: bold; color: #2ec4b6; font-size: 1.1rem; display: block;">INQUADRA IL MARKER HIRO</span>
-                <button class="close-ar-btn" onclick="closeAR()">TORNA ALLA MAPPA</button>
-            </div>
-            <div class="ar-instructions">
-                Mostra alla fotocamera il marker Hiro!
-            </div>
-        </div>
+    <div id="control-panel">
+      <p id="clue-text">
+        🔍 Indizio 1: "Cerca dove si cucina e si prepara il buon cibo!"
+      </p>
+      <button id="open-cam-btn" class="btn active-btn">APRI FOTOCAMERA AR</button>
+    </div>
+  </div>
 
-        <div id="ar-scene-slot" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+  <!-- CONTAINER FOTOCAMERA AR -->
+  <div id="ar-view-container">
+    <div id="ar-overlay">
+      <div class="ar-header">
+        <span id="ar-target-title" style="font-weight: bold; color: #2ec4b6; font-size: 1.1rem; display: block;">CERCA IL MARKER</span>
+        <button class="close-ar-btn" onclick="closeAR()">TORNA ALLA MAPPA</button>
+      </div>
+      <div class="ar-instructions">
+        Inquadra il foglio stampato per far apparire l'elemento 3D!
+      </div>
     </div>
 
-    <div id="backdrop"></div>
-    <div id="quiz-modal" style="text-align: center; padding: 20px;">
-        <h2 style="color: #2ec4b6; margin-top: 0;">🎉 Tappa Sbloccata!</h2>
-        <p>Il codice JavaScript ha rilevato con successo il marker Hiro!</p>
-        <button class="btn" onclick="closeQuiz()" style="margin-top: 15px;">OK</button>
-    </div>
+    <div id="ar-scene-slot" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+  </div>
 
-    <script>
-        // Abbiamo rimosso del tutto <a-assets> per evitare qualsiasi blocco di caricamento all'avvio!
-        // Usiamo un <a-box> (un cubo 3D nativo di A-Frame) che non richiede download esterni.
-        const AR_SCENE_HTML = `
+  <!-- MODALE DEL QUIZ -->
+  <div id="backdrop"></div>
+  <div id="quiz-modal">
+    <h2 id="quiz-title">Quiz Sbloccato!</h2>
+    <p id="quiz-question">Domanda?</p>
+    <div class="quiz-answers" id="quiz-options"></div>
+  </div>
+
+  <script>
+    const steps = [
+      {
+        id: 1,
+        name: "Tappa 1: Cucina",
+        clue: "🔍 Indizio: Cerca dove si cucina e si prepara il buon cibo!",
+        markerId: "marker-tappa-1",
+        question: "Quale azione natalizia fa crescere il cuore del Grinch?",
+        answers: [
+          { text: "Prendere", isCorrect: false },
+          { text: "Donare", isCorrect: true },
+          { text: "Nascondere", isCorrect: false }
+        ]
+      },
+      {
+        id: 2,
+        name: "Tappa 2: Bagno",
+        clue: "🔍 Indizio: Un posto pulito ti aspetta, vicino allo specchio c'è una sorpresa.",
+        markerId: "marker-tappa-2",
+        question: "Che tipo di cappello dà la vita al pupazzo di neve?",
+        answers: [
+          { text: "Normale", isCorrect: false },
+          { text: "Magico", isCorrect: true },
+          { text: "Rotto", isCorrect: false }
+        ]
+      },
+      {
+        id: 3,
+        name: "Tappa 3: Salone",
+        clue: "🔍 Indizio: Sotto l'albero più grande, c'è chi i regali spande.",
+        markerId: "marker-tappa-1", // Riutilizza Hiro
+        question: "Quale parola descrive meglio la famosa risata di Babbo Natale?",
+        answers: [
+          { text: "Scontroso", isCorrect: false },
+          { text: "Allegro", isCorrect: true },
+          { text: "Silenzioso", isCorrect: false }
+        ]
+      },
+      {
+        id: 4,
+        name: "Tappa 4: Scala d'Ingresso",
+        clue: "🔍 Indizio: La caccia finisce dove la scala inizia!",
+        markerId: "marker-tappa-2", // Riutilizza Kanji
+        question: "Cosa trainano le renne nel cielo la notte della Vigilia?",
+        answers: [
+          { text: "Un carro", isCorrect: false },
+          { text: "La slitta", isCorrect: true },
+          { text: "Un carretto", isCorrect: false }
+        ]
+      }
+    ];
+
+    let currentStepIndex = 0;
+    let isQuizOpen = false;
+
+    // SCENA AR CORRETTA E LEGGERISSIMA (Solo elementi nativi di A-Frame, zero timeout!)
+    const AR_SCENE_HTML = `
         <a-scene embedded
             arjs="sourceType: webcam; debugUIEnabled: false;"
             renderer="alpha: true; antialias: true;"
             vr-mode-ui="enabled: false">
-            
+
+            <!-- TAPPA 1 & 3: Marker Hiro (Sotto mostriamo un CUBO rosso) -->
             <a-marker id="marker-tappa-1" preset="hiro">
-                <!-- Un semplice cubo rosso che gira, leggerissimo e nativo -->
-                <a-box position="0 0.5 0" material="color: red; opacity: 0.8;" 
-                       animation="property: rotation; to: 0 360 360; loop: true; dur: 3000"></a-box>
+                <a-box position="0 0.5 0" material="color: #e71d36; opacity: 0.85;" 
+                       animation="property: rotation; to: 0 360 360; loop: true; dur: 4000"></a-box>
             </a-marker>
-            
+
+            <!-- TAPPA 2 & 4: Marker Kanji (Sotto mostriamo una SFERA azzurra) -->
+            <a-marker id="marker-tappa-2" preset="kanji">
+                <a-sphere position="0 0.5 0" radius="0.5" material="color: #2ec4b6; opacity: 0.85;" 
+                       animation="property: position; to: 0 0.8 0; dir: alternate; loop: true; dur: 1500"></a-sphere>
+            </a-marker>
+
             <a-entity camera></a-entity>
         </a-scene>`;
 
-        const openCamBtn = document.getElementById('open-cam-btn');
-        const arViewContainer = document.getElementById('ar-view-container');
-        const arSceneSlot = document.getElementById('ar-scene-slot');
-        const appContainer = document.getElementById('app-container');
-        const quizModal = document.getElementById('quiz-modal');
-        const backdrop = document.getElementById('backdrop');
+    const openCamBtn = document.getElementById('open-cam-btn');
+    const arViewContainer = document.getElementById('ar-view-container');
+    const arSceneSlot = document.getElementById('ar-scene-slot');
+    const appContainer = document.getElementById('app-container');
+    const clueText = document.getElementById('clue-text');
+    const gameStatus = document.getElementById('game-status');
+    const quizModal = document.getElementById('quiz-modal');
+    const backdrop = document.getElementById('backdrop');
 
-        openCamBtn.addEventListener('click', async () => {
-            try {
-                // Chiediamo prima i permessi
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                stream.getTracks().forEach(track => track.stop());
+    openCamBtn.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream.getTracks().forEach(track => track.stop());
 
-                // Avviamo l'AR
-                appContainer.style.display = 'none';
-                document.body.classList.add('ar-open');
-                arViewContainer.style.display = 'block';
+        startARGame();
+      } catch (err) {
+        console.error("Permesso fotocamera negato o non disponibile:", err);
+        alert("Per giocare è necessario consentire l'uso della fotocamera! Controlla le impostazioni del sito o del browser.");
+      }
+    });
 
-                if (!arSceneSlot.querySelector('a-scene')) {
-                    arSceneSlot.innerHTML = AR_SCENE_HTML;
-                    setTimeout(attachMarkerListeners, 300);
-                }
-            } catch (err) {
-                console.error("Errore fotocamera:", err);
-                alert("Consenti l'uso della fotocamera per avviare il gioco!");
+    function startARGame() {
+      appContainer.style.display = 'none';
+      document.body.classList.add('ar-open');
+      arViewContainer.style.display = 'block';
+      document.getElementById('ar-target-title').innerText = `TROVA: ${steps[currentStepIndex].name}`;
+
+      if (!arSceneSlot.querySelector('a-scene')) {
+        arSceneSlot.innerHTML = AR_SCENE_HTML;
+        setTimeout(attachMarkerListeners, 300);
+      }
+    }
+
+    function attachMarkerListeners() {
+      steps.forEach((step, index) => {
+        const markerEl = document.getElementById(step.markerId);
+        if (markerEl) {
+          markerEl.addEventListener('markerFound', () => {
+            if (index === currentStepIndex && !isQuizOpen) {
+              triggerQuiz(step);
             }
-        });
-
-        function attachMarkerListeners() {
-            const markerEl = document.getElementById('marker-tappa-1');
-            if (markerEl) {
-                markerEl.addEventListener('markerFound', () => {
-                    triggerQuiz();
-                });
-            }
+          });
         }
+      });
+    }
 
-        function closeAR() {
-            document.querySelectorAll('video').forEach(v => {
-                if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
-                v.remove();
-            });
-            arSceneSlot.innerHTML = '';
-            arViewContainer.style.display = 'none';
-            document.body.classList.remove('ar-open');
-            appContainer.style.display = 'flex';
-        }
+    function closeAR() {
+      document.querySelectorAll('video').forEach(v => {
+        if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+        v.remove();
+      });
+      arSceneSlot.innerHTML = '';
+      arViewContainer.style.display = 'none';
+      document.body.classList.remove('ar-open');
+      appContainer.style.display = 'flex';
+    }
 
-        function triggerQuiz() {
-            closeAR();
-            backdrop.style.display = 'block';
-            quizModal.style.display = 'block';
+    // Debug simulator (clic sul pin)
+    document.querySelectorAll('.pin').forEach((pinEl, index) => {
+      pinEl.addEventListener('click', () => {
+        if (index === currentStepIndex) {
+          triggerQuiz(steps[index]);
         }
+      });
+    });
 
-        function closeQuiz() {
-            backdrop.style.display = 'none';
-            quizModal.style.display = 'none';
+    function triggerQuiz(step) {
+      isQuizOpen = true;
+      closeAR();
+
+      backdrop.style.display = 'block';
+      quizModal.style.display = 'block';
+
+      document.getElementById('quiz-question').innerText = step.question;
+      const optionsContainer = document.getElementById('quiz-options');
+      optionsContainer.innerHTML = '';
+
+      step.answers.forEach(ans => {
+        const button = document.createElement('button');
+        button.className = 'answer-btn';
+        button.innerText = ans.text;
+        button.onclick = () => checkAnswer(ans.isCorrect);
+        optionsContainer.appendChild(button);
+      });
+    }
+
+    function checkAnswer(isCorrect) {
+      if (isCorrect) {
+        alert("🎉 Esatto!");
+        backdrop.style.display = 'none';
+        quizModal.style.display = 'none';
+        isQuizOpen = false;
+
+        const currentPin = document.getElementById(`pin-${currentStepIndex + 1}`);
+        currentPin.className = "pin completed";
+
+        currentStepIndex++;
+
+        if (currentStepIndex < steps.length) {
+          const nextPin = document.getElementById(`pin-${currentStepIndex + 1}`);
+          nextPin.className = "pin active";
+          nextPin.classList.remove('locked');
+          clueText.innerText = steps[currentStepIndex].clue;
+          gameStatus.innerText = `Tappa ${currentStepIndex + 1} di ${steps.length}: Trova il prossimo indizio`;
+        } else {
+          clueText.innerText = "🏆 Spettacolare! Hai completato la caccia al tesoro!";
+          gameStatus.innerText = "Caccia completata con successo! 🎉";
+          openCamBtn.disabled = true;
+          openCamBtn.className = "btn";
+          openCamBtn.innerText = "COMPLETATO!";
         }
-    </script>
+      } else {
+        alert("❌ Ritenta, sarai più fortunato!");
+      }
+    }
+  </script>
 </body>
+
 </html>

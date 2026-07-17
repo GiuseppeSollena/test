@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>Caccia al Tesoro AR - Casa Mia</title>
 
   <!-- Librerie per Realtà Aumentata -->
@@ -11,7 +11,6 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Permettiamo lo scroll naturale sulla pagina principale */
     html, body {
       margin: 0;
       padding: 0;
@@ -24,7 +23,6 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Struttura flessibile che segue il flusso della pagina */
     #app-container {
       display: flex;
       flex-direction: column;
@@ -53,7 +51,6 @@
       color: #aaaaaa;
     }
 
-    /* Mappa responsive che si adatta senza rompere il layout */
     #map-view {
       width: 100%;
       padding: 10px;
@@ -66,7 +63,7 @@
     .map-wrapper {
       position: relative;
       width: 100%;
-      max-width: 380px; /* Dimensione ideale per tutti i telefoni */
+      max-width: 380px;
       margin: 0 auto;
     }
 
@@ -79,7 +76,6 @@
       opacity: 0.9;
     }
 
-    /* Pin sopra la mappa */
     .pin {
       position: absolute;
       width: 32px;
@@ -126,7 +122,7 @@
       padding: 20px;
       border-top: 2px solid #333;
       text-align: center;
-      margin-top: auto; /* Si ancora al fondo ma permette lo scroll se lo schermo è piccolo */
+      margin-top: auto;
     }
 
     #clue-text {
@@ -161,7 +157,6 @@
       z-index: 9999;
     }
 
-    /* Quando l'AR è attiva, congeliamo lo scroll dello sfondo */
     body.ar-open {
       overflow: hidden !important;
       background-color: #000 !important;
@@ -234,6 +229,7 @@
       border-radius: 12px;
       padding: 20px;
       z-index: 100000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
     }
 
     #quiz-modal h2 {
@@ -291,7 +287,7 @@
 
 <body>
 
-  <!-- INTERFACCIA PRINCIPALE (SCROLLABILE) -->
+  <!-- INTERFACCIA PRINCIPALE -->
   <div id="app-container">
     <header>
       <h1>CACCIA AL TESORO AR</h1>
@@ -321,11 +317,11 @@
   <div id="ar-view-container">
     <div id="ar-overlay">
       <div class="ar-header">
-        <span id="ar-target-title" style="font-weight: bold; color: #2ec4b6; font-size: 1.1rem; display: block;">CERCA IL MARKER</span>
+        <span id="ar-target-title" style="font-weight: bold; color: #2ec4b6; font-size: 1.1rem; display: block;">CERCA IL PERSONAGGIO</span>
         <button class="close-ar-btn" onclick="closeAR()">TORNA ALLA MAPPA</button>
       </div>
-      <div class="ar-instructions">
-        Inquadra il foglio stampato per far apparire l'elemento 3D!
+      <div class="ar-instructions" id="ar-status-instruction">
+        Inquadra il foglio stampato e TOCCA il personaggio per prenderlo!
       </div>
     </div>
 
@@ -341,12 +337,26 @@
   </div>
 
   <script>
+    // Registriamo un componente personalizzato di A-Frame per intercettare il click sugli elementi 3D
+    AFRAME.registerComponent('catturabile', {
+      init: function () {
+        this.el.addEventListener('click', function (evt) {
+          // Ricaviamo il marker genitore per capire quale oggetto è stato toccato
+          const markerParentId = this.parentElement.getAttribute('id');
+          console.log("Oggetto toccato sul marker:", markerParentId);
+          
+          // Eseguiamo il trigger del gioco passando il marker id rilevato
+          handleObjectClicked(markerParentId);
+        });
+      }
+    });
+
     const steps = [
       {
         id: 1,
-        name: "Tappa 1: Cucina",
+        name: "Tappa 1: Cucina (Il Grinch)",
         clue: "🔍 Indizio: Cerca dove si cucina e si prepara il buon cibo!",
-        markerId: "marker-tappa-1",
+        markerId: "marker-tappa-1", 
         question: "Quale azione natalizia fa crescere il cuore del Grinch?",
         answers: [
           { text: "Prendere", isCorrect: false },
@@ -356,9 +366,9 @@
       },
       {
         id: 2,
-        name: "Tappa 2: Bagno",
+        name: "Tappa 2: Bagno (Il Pupazzo di Neve)",
         clue: "🔍 Indizio: Un posto pulito ti aspetta, vicino allo specchio c'è una sorpresa.",
-        markerId: "marker-tappa-2",
+        markerId: "marker-tappa-2", 
         question: "Che tipo di cappello dà la vita al pupazzo di neve?",
         answers: [
           { text: "Normale", isCorrect: false },
@@ -368,9 +378,9 @@
       },
       {
         id: 3,
-        name: "Tappa 3: Salone",
+        name: "Tappa 3: Salone (Babbo Natale)",
         clue: "🔍 Indizio: Sotto l'albero più grande, c'è chi i regali spande.",
-        markerId: "marker-tappa-1",
+        markerId: "marker-tappa-1", 
         question: "Quale parola descrive meglio la famosa risata di Babbo Natale?",
         answers: [
           { text: "Scontroso", isCorrect: false },
@@ -380,9 +390,9 @@
       },
       {
         id: 4,
-        name: "Tappa 4: Scala d'Ingresso",
+        name: "Tappa 4: Scala d'Ingresso (La Renna)",
         clue: "🔍 Indizio: La caccia finisce dove la scala inizia!",
-        markerId: "marker-tappa-2",
+        markerId: "marker-tappa-2", 
         question: "Cosa trainano le renne nel cielo la notte della Vigilia?",
         answers: [
           { text: "Un carro", isCorrect: false },
@@ -395,28 +405,25 @@
     let currentStepIndex = 0;
     let isQuizOpen = false;
 
-    // Configurazione della scena AR.
-    // NOTA: Se hai caricato i tuoi file .glb locali (es. assets/grinch.glb) nella cartella del progetto,
-    // puoi sostituire <a-box> e <a-sphere> con i tuoi tag <a-entity gltf-model="assets/tuo-personaggio.glb"> !
+    // Configurazione Scena AR con Raycaster per i click su mobile (cursor="rayOrigin: mouse")
     const AR_SCENE_HTML = `
         <a-scene embedded
             arjs="sourceType: webcam; debugUIEnabled: false;"
             renderer="alpha: true; antialias: true;"
             vr-mode-ui="enabled: false">
 
+            <!-- Abilitiamo il cursore stile mouse per cliccare toccando lo schermo -->
+            <a-entity cursor="rayOrigin: mouse" raycaster="objects: .cliccabile"></a-entity>
+
             <!-- Marker Hiro (Tappe 1 e 3) -->
             <a-marker id="marker-tappa-1" preset="hiro">
-                <!-- Se hai il modello grinch.glb locale, usa questo e cancella la riga a-box sotto: -->
-                <!-- <a-entity gltf-model="assets/grinch.glb" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-entity> -->
-                <a-box position="0 0.5 0" material="color: #e71d36; opacity: 0.85;" 
+                <a-box class="cliccabile" catturabile position="0 0.5 0" material="color: #e71d36; opacity: 0.85;" 
                        animation="property: rotation; to: 0 360 360; loop: true; dur: 4000"></a-box>
             </a-marker>
 
             <!-- Marker Kanji (Tappe 2 e 4) -->
             <a-marker id="marker-tappa-2" preset="kanji">
-                <!-- Se hai il modello snowman.glb locale, usa questo e cancella la riga a-sphere sotto: -->
-                <!-- <a-entity gltf-model="assets/snowman.glb" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-entity> -->
-                <a-sphere position="0 0.5 0" radius="0.5" material="color: #2ec4b6; opacity: 0.85;" 
+                <a-sphere class="cliccabile" catturabile position="0 0.5 0" radius="0.5" material="color: #2ec4b6; opacity: 0.85;" 
                        animation="property: position; to: 0 0.8 0; dir: alternate; loop: true; dur: 1500"></a-sphere>
             </a-marker>
 
@@ -431,16 +438,16 @@
     const gameStatus = document.getElementById('game-status');
     const quizModal = document.getElementById('quiz-modal');
     const backdrop = document.getElementById('backdrop');
+    const arStatusInstruction = document.getElementById('ar-status-instruction');
 
     openCamBtn.addEventListener('click', async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         stream.getTracks().forEach(track => track.stop());
-
         startARGame();
       } catch (err) {
         console.error("Permesso fotocamera negato:", err);
-        alert("Per giocare è necessario consentire l'uso della fotocamera! Controlla le impostazioni del browser.");
+        alert("Per giocare è necessario consentire l'uso della fotocamera!");
       }
     });
 
@@ -448,25 +455,30 @@
       appContainer.style.display = 'none';
       document.body.classList.add('ar-open');
       arViewContainer.style.display = 'block';
-      document.getElementById('ar-target-title').innerText = `TROVA: ${steps[currentStepIndex].name}`;
+      
+      const activeStep = steps[currentStepIndex];
+      document.getElementById('ar-target-title').innerText = `CACCIA: ${activeStep.name}`;
+      arStatusInstruction.innerText = `Inquadra il marker. Quando appare l'oggetto, TOCCALO sul display!`;
+      arStatusInstruction.style.background = "rgba(255, 159, 28, 0.95)";
 
       if (!arSceneSlot.querySelector('a-scene')) {
         arSceneSlot.innerHTML = AR_SCENE_HTML;
-        setTimeout(attachMarkerListeners, 300);
       }
     }
 
-    function attachMarkerListeners() {
-      steps.forEach((step, index) => {
-        const markerEl = document.getElementById(step.markerId);
-        if (markerEl) {
-          markerEl.addEventListener('markerFound', () => {
-            if (index === currentStepIndex && !isQuizOpen) {
-              triggerQuiz(step);
-            }
-          });
-        }
-      });
+    // Gestione dell'evento di Click sull'oggetto 3D
+    function handleObjectClicked(detectedMarkerId) {
+      if (isQuizOpen) return;
+
+      const activeStep = steps[currentStepIndex];
+      
+      // Controllo di sicurezza: verifichiamo se l'oggetto toccato corrisponde alla tappa corrente
+      if (detectedMarkerId === activeStep.markerId) {
+        triggerQuiz(activeStep);
+      } else {
+        arStatusInstruction.innerText = `⚠️ Questo oggetto appartiene a un'altra tappa! Trova l'indizio corretto.`;
+        arStatusInstruction.style.background = "rgba(231, 29, 54, 0.95)";
+      }
     }
 
     function closeAR() {
@@ -480,7 +492,7 @@
       appContainer.style.display = 'flex';
     }
 
-    // Debug simulator (cliccando sul pin attivo)
+    // Debug Simulator per PC
     document.querySelectorAll('.pin').forEach((pinEl, index) => {
       pinEl.addEventListener('click', () => {
         if (index === currentStepIndex) {
@@ -511,7 +523,7 @@
 
     function checkAnswer(isCorrect) {
       if (isCorrect) {
-        alert("🎉 Esatto!");
+        alert("🎉 Personaggio Catturato con Successo!");
         backdrop.style.display = 'none';
         quizModal.style.display = 'none';
         isQuizOpen = false;
@@ -535,7 +547,7 @@
           openCamBtn.innerText = "COMPLETATO!";
         }
       } else {
-        alert("❌ Risposta sbagliata! Ritenta, sarai più fortunato!");
+        alert("❌ Risposta sbagliata! Il personaggio è scappato, ritenta!");
       }
     }
   </script>

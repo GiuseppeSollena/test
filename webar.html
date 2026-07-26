@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gatto in WebAR</title>
-  
+
   <!-- Importa la libreria Model Viewer di Google -->
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
@@ -17,11 +18,13 @@
       overflow: hidden;
       font-family: sans-serif;
     }
+
     model-viewer {
       width: 100%;
       height: 100%;
       background-color: #f0f0f0;
     }
+
     .ar-button {
       background-color: #007bff;
       color: white;
@@ -34,27 +37,19 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
   </style>
 </head>
+
 <body>
 
   <!-- Componente AR -->
-  <model-viewer 
-    src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb" 
-    alt="Un modello 3D in Realtà Aumentata" 
-    ar 
-    ar-modes="webxr scene-viewer quick-look" 
-    camera-controls 
-    auto-rotate
-    shadow-intensity="1">
-    
-    <button slot="ar-button" class="ar-button">
-      🐱 Vedi il gatto nella tua stanza
-    </button>
-    
+  <model-viewer src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb"
+    ios-src="https://developer.apple.com/augmented-reality/quick-look/models/fox/fox.usdz" ar
+    ar-modes="quick-look scene-viewer webxr" camera-controls>
   </model-viewer>
 
 </body>
+
 </html>

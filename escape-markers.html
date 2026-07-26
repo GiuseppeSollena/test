@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Escape Room AR</title>
+
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+<style>
+  body { margin: 0; overflow: hidden; background: #000; }
+  .overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 14px;
+    text-align: center;
+    color: #fff;
+    background: rgba(0,0,0,0.45);
+    z-index: 999;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay">📷 Inquadra un marker stampato in casa</div>
+
+<a-scene
+  mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: yes; uiLoading: yes;"
+  color-space="sRGB"
+  renderer="colorManagement: true, physicallyCorrectLights"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+>
+  <a-assets>
+    <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
+    <a-asset-item id="robotModel" src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"></a-asset-item>
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <!-- Marker index 0 -> oggetto sul divano -->
+  <a-entity mindar-image-target="targetIndex: 0">
+    <a-gltf-model
+      src="#astronautModel"
+      position="0 0 0.1"
+      rotation="0 0 0"
+      scale="0.15 0.15 0.15">
+    </a-gltf-model>
+  </a-entity>
+
+  <!-- Marker index 1 -> oggetto in cucina -->
+  <a-entity mindar-image-target="targetIndex: 1">
+    <a-gltf-model
+      src="#robotModel"
+      position="0 0 0.1"
+      rotation="0 0 0"
+      scale="0.3 0.3 0.3">
+    </a-gltf-model>
+  </a-entity>
+
+</a-scene>
+
+</body>
+</html>

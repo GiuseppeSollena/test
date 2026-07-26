@@ -4,9 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gatto in WebAR</title>
+  <title>AR Test</title>
 
-  <!-- Importa la libreria Model Viewer di Google -->
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 
   <style>
@@ -20,16 +19,16 @@
       height: 100vh;
       overflow: hidden;
       font-family: sans-serif;
+      background-color: #f0f0f0;
     }
 
     model-viewer {
       width: 100%;
       height: 100%;
-      background-color: #f0f0f0;
     }
 
-    /* Stile per il pulsante AR custom */
-    #ar-button {
+    /* Stile del pulsante AR */
+    #custom-ar-button {
       background-color: #007bff;
       color: white;
       border: none;
@@ -37,18 +36,14 @@
       padding: 14px 28px;
       font-weight: bold;
       font-size: 16px;
-      position: absolute;
+      position: fixed;
       bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       cursor: pointer;
-      z-index: 9999;
-      white-space: nowrap;
-    }
-
-    #ar-button:active {
-      background-color: #0056b3;
+      z-index: 99999;
+      display: block !important; /* Forziamo la visibilità */
     }
   </style>
 </head>
@@ -56,20 +51,34 @@
 <body>
 
   <model-viewer 
+    id="viewer"
     src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb"
-    ios-src="https://developer.apple.com/augmented-reality/quick-look/models/fox/fox.usdz" 
-    alt="Modello 3D"
+    alt="Volpe 3D"
     ar 
-    ar-modes="quick-look scene-viewer webxr" 
+    ar-modes="scene-viewer webxr quick-look" 
     camera-controls
     auto-rotate>
 
-    <!-- ECCO IL BOTTONE MANCANTE -->
-    <button slot="ar-button" id="ar-button">
+    <button slot="ar-button" id="custom-ar-button">
       📷 VEDI IN CASA TUA (AR)
     </button>
 
   </model-viewer>
+
+  <script>
+    // Fallback manuale: se il click sul bottone non avvia l'AR automatica di model-viewer,
+    // forziamo l'attivazione della modalità AR.
+    const viewer = document.getElementById('viewer');
+    const button = document.getElementById('custom-ar-button');
+
+    button.addEventListener('click', () => {
+      if (viewer.canActivateAR) {
+        viewer.activateAR();
+      } else {
+        alert("Il tuo browser o dispositivo non sembra supportare l'AR. Se sei su iPhone, assicurati di usare Safari standard e non una scheda privata.");
+      }
+    });
+  </script>
 
 </body>
 

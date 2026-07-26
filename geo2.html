@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Folly Dolly — Caccia al Tesoro Magica!</title>
+<!-- Google Font Allegro e Pop -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  html, body {
+    margin: 0; padding: 0; 
+    width: 100%; height: 100%;
+    height: 100vh; height: 100dvh;
+    font-family: 'Fredoka', 'Poppins', sans-serif;
+    background: #ff75c3;
+    color: #fff;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #app { 
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden;
+  }
+
+  .screen { 
+    position: absolute; 
+    inset: 0; 
+    display: none; 
+    flex-direction: column;
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+  .screen.active { display: flex; }
+
+  /* ---------- PROGRESS BAR (Pallini Rosa/Oro) ---------- */
+  #progress-bar {
+    position: absolute;
+    top: 18px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 10px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    border-radius: 30px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(234, 0, 116, 0.2);
+  }
+  .progress-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid #fff;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .progress-dot.done { 
+    background: #ffe600; 
+    border-color: #fff;
+    transform: scale(1.1);
+  }
+  .progress-dot.current { 
+    background: #ff007f; 
+    border-color: #ffe600; 
+    box-shadow: 0 0 10px #ff007f;
+    transform: scale(1.3);
+  }
+
+  /* ---------- SETUP ---------- */
+  #screen-setup { 
+    align-items: center; 
+    justify-content: center; 
+    padding: 24px; 
+    background: linear-gradient(135deg, #ff75c3 0%, #ffa647 50%, #ffe600 100%); 
+  }
+
+  /* ---------- NAVIGAZIONE ---------- */
+  #screen-navigate {
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 30%, #ff66b2 0%, #7b2cbf 70%, #3a0ca3 100%);
+    padding: 20px;
+  }
+  #nav-stop-label { 
+    font-size: 16px; 
+    color: #ffe600; 
+    font-weight: 700; 
+    letter-spacing: 1.5px; 
+    text-transform: uppercase; 
+    margin-bottom: 6px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  #nav-distance { 
+    font-size: 22px; 
+    font-weight: 700; 
+    color: #ffffff; 
+    margin-bottom: 4px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  #nav-accuracy { font-size: 12px; color: #f1c40f; margin-bottom: 20px; font-weight: 600; }
+  
+  #nav-arrow-wrap { 
+    width: 200px; height: 200px; 
+    display: flex; align-items: center; justify-content: center; 
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    border: 4px dashed rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
+    margin: 10px 0;
+  }
+  #nav-arrow {
+    width: 140px; height: 140px;
+    transform: rotate(0deg);
+    transition: transform 0.2s ease-out;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+  }
+  #nav-hint { 
+    margin-top: 18px; 
+    font-size: 15px; 
+    color: #ffffff; 
+    text-align: center; 
+    max-width: 300px; 
+    line-height: 1.4; 
+    font-weight: 600;
+  }
+  #nav-compass-warning { 
+    margin-top: 10px; 
+    font-size: 12px; 
+    color: #ffe600; 
+    text-align: center; 
+    max-width: 280px; 
+    display: none; 
+  }
+  #btn-debug-set-here {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: 2px dashed rgba(255,255,255,0.6);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 20px;
+    width: auto;
+  }
+
+  /* ---------- PANNELLO "ARRIVATO" ---------- */
+  #arrived-panel {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(58, 12, 163, 0.85);
+    backdrop-filter: blur(8px);
+    text-align: center; padding: 20px;
+    z-index: 30;
+  }
+  #arrived-panel.active { display: flex; }
+  #arrived-panel .inner {
+    width: 100%; max-width: 380px;
+    background: linear-gradient(135deg, #ff007f 0%, #7b2cbf 100%);
+    border: 4px solid #ffe600;
+    border-radius: 30px;
+    padding: clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px);
+    box-shadow: 0 10px 40px rgba(255, 0, 127, 0.6);
+  }
+  #arrived-panel .pulse-icon { 
+    font-size: clamp(50px, 15vw, 70px); 
+    margin-bottom: 10px; 
+    animation: bounce 1.2s infinite alternate; 
+  }
+  @keyframes bounce { 
+    0% { transform: translateY(0) scale(1); } 
+    100% { transform: translateY(-15px) scale(1.15); } 
+  }
+
+  /* ---------- FOTOCAMERA ---------- */
+  #screen-camera { inset: 0; overflow: hidden; }
+  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  
+  #treasure {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: clamp(180px, 55vmin, 280px);
+    height: clamp(180px, 55vmin, 280px);
+    font-size: clamp(130px, 40vmin, 200px);
+    display: flex; align-items: center; justify-content: center;
+    animation: float 2.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 35px #ffe600);
+    z-index: 3;
+    cursor: pointer;
+    user-select: none;
+  }
+  @keyframes float {
+    0%,100% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+    50% { transform: translate(-50%, calc(-50% - 22px)) scale(1.1) rotate(3deg); }
+  }
+  #treasure.collecting {
+    animation: collect 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    pointer-events: none;
+  }
+  @keyframes collect {
+    0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    40%  { transform: translate(-50%, calc(-50% - 40px)) scale(1.6) rotate(25deg); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 100px)) scale(0) rotate(90deg); opacity: 0; }
+  }
+  
+  #collect-sparkle {
+    position: absolute;
+    top: 50%; left: 50%;
+    font-size: 40px;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 4;
+    pointer-events: none;
+  }
+  #collect-sparkle.show {
+    display: block;
+    animation: sparkle-burst 0.8s ease-out forwards;
+  }
+  @keyframes sparkle-burst {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+    50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.6); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5) translateY(-60px); }
+  }
+  
+  #camera-tap-hint {
+    position: absolute;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #ff007f, #7b2cbf);
+    border: 2px solid #ffe600;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 700;
+    z-index: 3;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  #camera-leaving-warning {
+    position: absolute;
+    bottom: 40px; left: 50%;
+    transform: translateX(-50%);
+    background: #ff0055;
+    border: 2px solid #fff;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 3;
+    display: none;
+    text-align: center;
+    max-width: 85%;
+  }
+
+  /* ---------- SCHERMATA "TAPPA COMPLETATA" ---------- */
+  #screen-stop-complete {
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #7b2cbf 0%, #ff007f 100%);
+    text-align: center;
+    padding: 20px;
+    min-height: 100%;
+  }
+  .stop-complete-card {
+    width: 100%; max-width: 400px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    border: 3px solid rgba(255,255,255,0.4);
+    border-radius: 30px;
+    padding: clamp(28px, 7vw, 44px) clamp(20px, 6vw, 36px);
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  #stop-complete-icon { font-size: clamp(70px, 20vw, 100px); line-height: 1; filter: drop-shadow(0 0 15px #ffe600); }
+
+  /* ---------- SCHERMATA FINALE ---------- */
+  #screen-finished {
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #ff007f 0%, #ff75c3 50%, #ffe600 100%);
+    text-align: center;
+    padding: 20px;
+    min-height: 100%;
+  }
+  .finished-card {
+    width: 100%; max-width: 420px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    border: 4px solid #fff;
+    border-radius: 35px;
+    padding: clamp(28px, 7vw, 44px) clamp(20px, 6vw, 36px);
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    box-shadow: 0 15px 40px rgba(234, 0, 116, 0.4);
+  }
+  #finished-collection {
+    display: flex; gap: clamp(12px, 4vw, 20px); margin: 12px 0;
+    font-size: clamp(36px, 11vw, 52px); flex-wrap: wrap; justify-content: center;
+    background: rgba(255,255,255,0.3);
+    padding: 15px 25px;
+    border-radius: 25px;
+  }
+
+  /* ---------- Elementi Grafici Generali ---------- */
+  .panel { 
+    background: rgba(255, 255, 255, 0.2); 
+    backdrop-filter: blur(12px);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-radius: 30px; 
+    padding: clamp(24px, 5vw, 32px) clamp(20px, 5vw, 28px); 
+    max-width: 420px; width: 100%; 
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  
+  h1 { font-size: clamp(22px, 6vw, 28px); margin: 0 0 12px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  h2 { font-size: clamp(19px, 5vw, 24px); margin: 0 0 10px; color: #ffe600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  p { font-size: clamp(14px, 4vw, 16px); line-height: 1.5; color: #ffffff; margin: 8px 0; font-weight: 500; }
+  
+  button {
+    width: 100%; padding: 16px 20px; border-radius: 25px; border: none;
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(16px, 4.5vw, 19px); font-weight: 700; margin-top: 12px; cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    touch-action: manipulation;
+  }
+  button:active { transform: scale(0.96); }
+  
+  .btn-primary { 
+    background: linear-gradient(90deg, #ffe600, #ffaa00); 
+    color: #5a0030; 
+    border: 2px solid #fff;
+  }
+  .btn-secondary { 
+    background: linear-gradient(90deg, #ff007f, #7b2cbf); 
+    color: white; 
+    border: 2px solid #ffe600;
+  }
+  #status-line { font-size: 13px; color: #fff; margin-top: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="progress-bar"></div>
+
+  <!-- ===== SETUP ===== -->
+  <div id="screen-setup" class="screen active">
+    <div class="panel">
+      <div style="font-size: 50px; margin-bottom: 10px;">💖🎀✨</div>
+      <h1>Folly Dolly Quest!</h1>
+      <p>
+        Benvenuta nell'avventura delle Folly Dolly! Ci sono 4 oggetti magici nascosti attorno a te. Trovali tutti usando il GPS e la fotocamera!
+      </p>
+      <button class="btn-primary" id="btn-start">🌸 Inizia l'Avventura!</button>
+      <div id="status-line"></div>
+    </div>
+  </div>
+
+  <!-- ===== NAVIGAZIONE ===== -->
+  <div id="screen-navigate" class="screen">
+    <div id="nav-stop-label"></div>
+    <div id="nav-distance">Calcolo distanza...</div>
+    <div id="nav-accuracy"></div>
+    
+    <div id="nav-arrow-wrap">
+      <!-- Stella Magica in SVG usata come Bussola -->
+      <svg id="nav-arrow" viewBox="0 0 100 100">
+        <path d="M50,5 L63,35 L95,38 L71,60 L78,92 L50,75 L22,92 L29,60 L5,38 L37,35 Z" fill="#ffe600" stroke="#ff007f" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="50" cy="50" r="12" fill="#ff007f"/>
+      </svg>
+    </div>
+    
+    <div id="nav-hint">Segui la stella magica: quando sarai abbastanza vicina potrai sbloccare la fotocamera! ✨</div>
+    <div id="nav-compass-warning">Bussola non disponibile: usa la distanza come guida.</div>
+    <button id="btn-debug-set-here">🛠️ Debug: imposta qui questa tappa</button>
+
+    <div id="arrived-panel">
+      <div class="inner">
+        <div class="pulse-icon">💖</div>
+        <h2>Sei vicinissima!</h2>
+        <p>L'oggetto magico è proprio qui attorno! Apri la fotocamera per trovarlo!</p>
+        <button class="btn-primary" id="btn-open-camera">📸 Apri Fotocamera Magica</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOTOCAMERA ===== -->
+  <div id="screen-camera" class="screen">
+    <video id="video" autoplay playsinline muted></video>
+    <div id="camera-tap-hint">Tocca l'oggetto per raccoglierlo! ✨</div>
+    <div id="treasure"></div>
+    <div id="collect-sparkle">✨💖🌸⭐</div>
+    <div id="camera-leaving-warning">Ti stai allontanando! Torno alla navigazione...</div>
+  </div>
+
+  <!-- ===== TAPPA COMPLETATA ===== -->
+  <div id="screen-stop-complete" class="screen">
+    <div class="stop-complete-card">
+      <div id="stop-complete-icon"></div>
+      <h2 id="stop-complete-title"></h2>
+      <p id="stop-complete-text"></p>
+      <button class="btn-primary" id="btn-next-stop">Prossima Tappa 🌸</button>
+    </div>
+  </div>
+
+  <!-- ===== PERCORSO COMPLETATO ===== -->
+  <div id="screen-finished" class="screen">
+    <div class="finished-card">
+      <div style="font-size: 50px;">👑🎉✨</div>
+      <h1>Sei una vera Folly Dolly!</h1>
+      <p>Hai trovato tutti i tesori magici del percorso:</p>
+      <div id="finished-collection"></div>
+      <button class="btn-primary" id="btn-restart">🔄 Gioca di Nuovo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CONFIG = {
+  unlockRadiusMeters: 15,
+  exitRadiusMeters: 30,
+};
+
+// Tappe personalizzate a tema Folly Dolly
+let stops = [
+  { lat: 45.527796407711854, lng: 9.385064064712813, emoji: '💖', label: 'Tappa 1 — Il Fiocco Magico' },
+  { lat: 45.52177514332835, lng: 9.362071733018423, emoji: '👑', label: 'Tappa 2 — La Diadema Folly' },
+  { lat: 45.52145686161298, lng: 9.330890019874266, emoji: '🦄', label: 'Tappa 3 — L\'Unicorno Pop' },
+  { lat: 45.517441207798136, lng: 9.297855618026784, emoji: '🌟', label: 'Tappa 4 — La Stella Folly Dolly' },
+];
+
+let state = {
+  watchId: null,
+  cameraStream: null,
+  phase: 'setup',
+  currentHeading: null,
+  currentPosition: null,
+  currentStopIndex: 0,
+  collected: [],
+};
+
+const el = {
+  progressBar: document.getElementById('progress-bar'),
+  screenSetup: document.getElementById('screen-setup'),
+  screenNavigate: document.getElementById('screen-navigate'),
+  screenCamera: document.getElementById('screen-camera'),
+  screenStopComplete: document.getElementById('screen-stop-complete'),
+  screenFinished: document.getElementById('screen-finished'),
+  arrivedPanel: document.getElementById('arrived-panel'),
+  btnStart: document.getElementById('btn-start'),
+  btnOpenCamera: document.getElementById('btn-open-camera'),
+  btnDebugSetHere: document.getElementById('btn-debug-set-here'),
+  btnNextStop: document.getElementById('btn-next-stop'),
+  btnRestart: document.getElementById('btn-restart'),
+  statusLine: document.getElementById('status-line'),
+  navStopLabel: document.getElementById('nav-stop-label'),
+  navDistance: document.getElementById('nav-distance'),
+  navAccuracy: document.getElementById('nav-accuracy'),
+  navArrow: document.getElementById('nav-arrow'),
+  navCompassWarning: document.getElementById('nav-compass-warning'),
+  video: document.getElementById('video'),
+  treasure: document.getElementById('treasure'),
+  collectSparkle: document.getElementById('collect-sparkle'),
+  cameraLeavingWarning: document.getElementById('camera-leaving-warning'),
+  stopCompleteIcon: document.getElementById('stop-complete-icon'),
+  stopCompleteTitle: document.getElementById('stop-complete-title'),
+  stopCompleteText: document.getElementById('stop-complete-text'),
+  finishedCollection: document.getElementById('finished-collection'),
+};
+
+function showScreen(name) {
+  [el.screenSetup, el.screenNavigate, el.screenCamera, el.screenStopComplete, el.screenFinished]
+    .forEach((s) => s.classList.remove('active'));
+  if (name === 'setup') el.screenSetup.classList.add('active');
+  if (name === 'navigate' || name === 'arrived') el.screenNavigate.classList.add('active');
+  if (name === 'camera') el.screenCamera.classList.add('active');
+  if (name === 'stopComplete') el.screenStopComplete.classList.add('active');
+  if (name === 'finished') el.screenFinished.classList.add('active');
+  el.arrivedPanel.classList.toggle('active', name === 'arrived');
+
+  el.progressBar.style.display = (name === 'setup' || name === 'finished') ? 'none' : 'flex';
+}
+
+function renderProgressDots() {
+  el.progressBar.innerHTML = '';
+  stops.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot';
+    if (i < state.currentStopIndex) dot.classList.add('done');
+    if (i === state.currentStopIndex) dot.classList.add('current');
+    el.progressBar.appendChild(dot);
+  });
+}
+
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function bearingTo(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function updateArrowRotation() {
+  const target = stops[state.currentStopIndex];
+  if (state.currentHeading === null || !state.currentPosition || target.lat === null) return;
+  const bearing = bearingTo(state.currentPosition.lat, state.currentPosition.lng, target.lat, target.lng);
+  const rotation = (bearing - state.currentHeading + 360) % 360;
+  el.navArrow.style.transform = `rotate(${rotation}deg)`;
+}
+
+async function enableCompass() {
+  const hasAbsolute = 'ondeviceorientationabsolute' in window;
+  const eventName = hasAbsolute ? 'deviceorientationabsolute' : 'deviceorientation';
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceOrientationEvent.requestPermission();
+      if (response !== 'granted') { el.navCompassWarning.style.display = 'block'; return; }
+    } catch (err) { el.navCompassWarning.style.display = 'block'; return; }
+  }
+
+  let gotReading = false;
+  window.addEventListener(eventName, (event) => {
+    if (typeof event.webkitCompassHeading === 'number') {
+      state.currentHeading = event.webkitCompassHeading; gotReading = true;
+    } else if (event.alpha !== null) {
+      state.currentHeading = (360 - event.alpha) % 360; gotReading = true;
+    }
+    updateArrowRotation();
+  });
+  setTimeout(() => { if (!gotReading) el.navCompassWarning.style.display = 'block'; }, 2500);
+}
+
+el.btnStart.addEventListener('click', async () => {
+  if (!navigator.geolocation) { alert('Geolocalizzazione non supportata.'); return; }
+  await enableCompass();
+  state.currentStopIndex = 0;
+  state.collected = [];
+  renderProgressDots();
+  goToNavigatingCurrentStop();
+
+  state.watchId = navigator.geolocation.watchPosition(
+    onPositionUpdate,
+    (err) => { el.navDistance.textContent = 'Errore GPS: ' + err.message; },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+  );
+});
+
+function goToNavigatingCurrentStop() {
+  const stop = stops[state.currentStopIndex];
+  el.navStopLabel.textContent = stop.label;
+  state.phase = 'navigating';
+  showScreen('navigate');
+  renderProgressDots();
+}
+
+el.btnDebugSetHere.addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      stops[state.currentStopIndex].lat = pos.coords.latitude;
+      stops[state.currentStopIndex].lng = pos.coords.longitude;
+      el.navDistance.textContent = 'Tappa impostata qui! ✨';
+    },
+    (err) => { alert('Errore GPS: ' + err.message); },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
+function onPositionUpdate(pos) {
+  state.currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  const target = stops[state.currentStopIndex];
+  if (target.lat === null) return;
+
+  const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, target.lat, target.lng);
+  const rounded = Math.round(d);
+
+  if (state.phase === 'navigating' || state.phase === 'arrived') {
+    el.navDistance.textContent = `Distanza: ${rounded} m`;
+    el.navAccuracy.textContent = `Precisione GPS: ±${Math.round(pos.coords.accuracy)} m`;
+    updateArrowRotation();
+  }
+
+  if (state.phase === 'navigating' && d <= CONFIG.unlockRadiusMeters) {
+    state.phase = 'arrived';
+    showScreen('arrived');
+  }
+  if (state.phase === 'arrived' && d > CONFIG.unlockRadiusMeters) {
+    state.phase = 'navigating';
+    showScreen('navigate');
+  }
+
+  if (state.phase === 'camera') {
+    if (d > CONFIG.unlockRadiusMeters && d <= CONFIG.exitRadiusMeters) {
+      el.cameraLeavingWarning.style.display = 'block';
+    } else {
+      el.cameraLeavingWarning.style.display = 'none';
+    }
+    if (d > CONFIG.exitRadiusMeters) closeCameraAndReturnToNavigation();
+  }
+}
+
+el.btnOpenCamera.addEventListener('click', async () => {
+  try {
+    state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    el.video.srcObject = state.cameraStream;
+  } catch (err) {
+    alert('Permesso fotocamera non disponibile: ' + err.message);
+    return;
+  }
+  const stop = stops[state.currentStopIndex];
+  el.treasure.textContent = stop.emoji;
+  el.treasure.classList.remove('collecting');
+  state.phase = 'camera';
+  showScreen('camera');
+});
+
+function closeCameraAndReturnToNavigation() {
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach((t) => t.stop());
+    state.cameraStream = null;
+  }
+  el.cameraLeavingWarning.style.display = 'none';
+  state.phase = 'navigating';
+  showScreen('navigate');
+}
+
+el.treasure.addEventListener('click', onCollectTreasure);
+el.treasure.addEventListener('touchstart', (e) => { e.preventDefault(); onCollectTreasure(); });
+
+function onCollectTreasure() {
+  if (state.phase !== 'camera') return;
+  state.phase = 'collecting';
+
+  el.treasure.classList.add('collecting');
+  el.collectSparkle.classList.remove('show');
+  void el.collectSparkle.offsetWidth;
+  el.collectSparkle.classList.add('show');
+
+  const stop = stops[state.currentStopIndex];
+  state.collected.push(stop.emoji);
+
+  setTimeout(() => {
+    if (state.cameraStream) {
+      state.cameraStream.getTracks().forEach((t) => t.stop());
+      state.cameraStream = null;
+    }
+    showStopCompleteScreen(stop);
+  }, 750);
+}
+
+function showStopCompleteScreen(stop) {
+  el.stopCompleteIcon.textContent = stop.emoji;
+  el.stopCompleteTitle.textContent = 'Fantastico!';
+  const isLast = state.currentStopIndex === stops.length - 1;
+  el.stopCompleteText.textContent = isLast
+    ? 'Hai trovato l\'ultimo oggetto magico!'
+    : `Hai conquistato "${stop.label}". Pronta per la prossima avventura?`;
+  el.btnNextStop.textContent = isLast ? 'Vedi il Trofeo Finale 👑' : 'Prossima Tappa 🌸';
+  state.phase = 'stopComplete';
+  showScreen('stopComplete');
+  renderProgressDots();
+}
+
+el.btnNextStop.addEventListener('click', () => {
+  const isLast = state.currentStopIndex === stops.length - 1;
+  if (isLast) {
+    showFinishedScreen();
+  } else {
+    state.currentStopIndex += 1;
+    goToNavigatingCurrentStop();
+  }
+});
+
+function showFinishedScreen() {
+  el.finishedCollection.innerHTML = '';
+  state.collected.forEach((emoji) => {
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    el.finishedCollection.appendChild(span);
+  });
+  state.phase = 'finished';
+  showScreen('finished');
+}
+
+el.btnRestart.addEventListener('click', () => {
+  state.currentStopIndex = 0;
+  state.collected = [];
+  state.phase = 'setup';
+  showScreen('setup');
+});
+</script>
+</body>
+</html>

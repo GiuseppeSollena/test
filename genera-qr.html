@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Genera QR Stazioni</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { font-size: 1.2rem; }
+  .setup {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 24px;
+    max-width: 500px;
+  }
+  label { display: block; font-size: 0.85rem; margin-bottom: 4px; font-weight: 600; }
+  input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .stazione-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .stazione-card h2 { font-size: 1rem; margin-top: 0; }
+  .stazione-card .qr { display: flex; justify-content: center; margin: 12px 0; }
+  .stazione-card .url {
+    font-size: 0.7rem;
+    color: #666;
+    word-break: break-all;
+    margin-bottom: 10px;
+  }
+  button {
+    background: #1b6f8c;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>🧩 Generatore QR per le stazioni del percorso</h1>
+
+<div class="setup">
+  <label>Dominio dove è pubblicata l'app (senza slash finale)</label>
+  <input id="dominio" value="https://tuosito.it" />
+  <label>Nome del file dell'app</label>
+  <input id="pagina" value="index.html" />
+  <button onclick="rigenera()">Rigenera QR</button>
+</div>
+
+<div id="stazioni-container"></div>
+
+<script>
+  const STAZIONI_IDS = ['divano', 'cucina'];
+  const container = document.getElementById('stazioni-container');
+
+  function rigenera() {
+    container.innerHTML = '';
+    const dominio = document.getElementById('dominio').value.replace(/\/$/, '');
+    const pagina = document.getElementById('pagina').value;
+
+    STAZIONI_IDS.forEach(id => {
+      const url = `${dominio}/${pagina}?stazione=${id}`;
+
+      const card = document.createElement('div');
+      card.className = 'stazione-card';
+      card.innerHTML = `
+        <h2>Stazione: ${id}</h2>
+        <div class="qr" id="qr-${id}"></div>
+        <div class="url">${url}</div>
+        <button onclick="scarica('${id}')">Scarica PNG</button>
+      `;
+      container.appendChild(card);
+
+      new QRCode(document.getElementById(`qr-${id}`), {
+        text: url,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    });
+  }
+
+  function scarica(id) {
+    const canvas = document.querySelector(`#qr-${id} canvas`);
+    const link = document.createElement('a');
+    link.download = `qr-${id}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  rigenera();
+</script>
+
+</body>
+</html>

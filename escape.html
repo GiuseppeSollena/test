@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Percorso AR</title>
+
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+<style>
+  :root { --brand: #1b6f8c; --accent: #f2c94c; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    background: #0d2b36;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header { padding: 16px 20px; text-align: center; }
+  header h1 { margin: 0 0 4px; font-size: 1.15rem; }
+  header p { margin: 0; font-size: 0.85rem; opacity: 0.75; }
+
+  model-viewer {
+    flex: 1;
+    width: 100%;
+    min-height: 60vh;
+    background-color: #0d2b36;
+  }
+
+  #ar-button {
+    background: var(--accent);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  #ar-button:active { transform: translateX(-50%) scale(0.97); }
+
+  #ar-unsupported {
+    display: none;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.6);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    max-width: 80%;
+    text-align: center;
+  }
+
+  #error-screen {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  footer { text-align: center; padding: 10px; font-size: 0.7rem; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="titolo">🛋️ Caricamento stazione…</h1>
+  <p id="sottotitolo">Attendere</p>
+</header>
+
+<model-viewer
+  id="viewer"
+  alt="Oggetto 3D"
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-scale="auto"
+  camera-controls
+  auto-rotate
+  shadow-intensity="1"
+  exposure="1"
+  environment-image="neutral"
+  loading="eager"
+  reveal="auto"
+>
+  <button slot="ar-button" id="ar-button">🔮 Vedi in AR</button>
+  <div id="ar-unsupported" slot="ar-button" style="display:none;">
+    AR non supportata su questo browser. Prova con Chrome (Android) o Safari (iOS).
+  </div>
+</model-viewer>
+
+<div id="error-screen">
+  <div>
+    <p>⚠️ Stazione non riconosciuta.</p>
+    <p style="opacity:0.7; font-size:0.85rem;">Scansiona un QR code valido del percorso.</p>
+  </div>
+</div>
+
+<footer>percorso AR — stazione dinamica da URL</footer>
+
+<script>
+  // ==========================================================
+  // CONFIGURAZIONE STAZIONI
+  // Ogni voce = un punto del percorso (divano, cucina, ecc.)
+  // Aggiungi qui nuove stazioni: la chiave è il valore del
+  // parametro ?stazione= nell'URL del QR code.
+  // ==========================================================
+  const STAZIONI = {
+    divano: {
+      titolo: "🛋️ Oggetto sul divano",
+      sottotitolo: "Inquadra il divano e tocca il bottone",
+      src: "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+      iosSrc: "https://modelviewer.dev/shared-assets/models/Astronaut.usdz",
+      placement: "wall"
+    },
+    cucina: {
+      titolo: "🍳 Oggetto sul piano cottura",
+      sottotitolo: "Inquadra il piano cottura e tocca il bottone",
+      src: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+      iosSrc: "https://modelviewer.dev/shared-assets/models/RobotExpressive.usdz",
+      placement: "floor" // per superfici orizzontali (piano, tavolo, pavimento)
+    }
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const stazioneId = params.get('stazione');
+  const config = STAZIONI[stazioneId];
+
+  const viewer = document.getElementById('viewer');
+  const titolo = document.getElementById('titolo');
+  const sottotitolo = document.getElementById('sottotitolo');
+  const errorScreen = document.getElementById('error-screen');
+
+  if (!config) {
+    // Nessuna stazione valida: mostra errore invece di un oggetto a caso
+    viewer.style.display = 'none';
+    errorScreen.style.display = 'flex';
+    titolo.textContent = '❌ Stazione non trovata';
+    sottotitolo.textContent = '';
+  } else {
+    titolo.textContent = config.titolo;
+    sottotitolo.textContent = config.sottotitolo;
+    viewer.setAttribute('src', config.src);
+    viewer.setAttribute('ios-src', config.iosSrc);
+    viewer.setAttribute('ar-placement', config.placement);
+  }
+
+  window.addEventListener('load', () => {
+    if (config && !viewer.canActivateAR) {
+      document.getElementById('ar-button').style.display = 'none';
+      document.getElementById('ar-unsupported').style.display = 'block';
+    }
+  });
+</script>
+
+</body>
+</html>

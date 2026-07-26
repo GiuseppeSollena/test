@@ -7,9 +7,12 @@
   <title>Gatto in WebAR</title>
 
   <!-- Importa la libreria Model Viewer di Google -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -25,29 +28,47 @@
       background-color: #f0f0f0;
     }
 
-    .ar-button {
+    /* Stile per il pulsante AR custom */
+    #ar-button {
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 20px;
-      padding: 12px 24px;
+      border-radius: 30px;
+      padding: 14px 28px;
       font-weight: bold;
+      font-size: 16px;
       position: absolute;
-      bottom: 30px;
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      z-index: 9999;
+      white-space: nowrap;
+    }
+
+    #ar-button:active {
+      background-color: #0056b3;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Componente AR -->
-  <model-viewer src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb"
-    ios-src="https://developer.apple.com/augmented-reality/quick-look/models/fox/fox.usdz" ar
-    ar-modes="quick-look scene-viewer webxr" camera-controls>
+  <model-viewer 
+    src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb"
+    ios-src="https://developer.apple.com/augmented-reality/quick-look/models/fox/fox.usdz" 
+    alt="Modello 3D"
+    ar 
+    ar-modes="quick-look scene-viewer webxr" 
+    camera-controls
+    auto-rotate>
+
+    <!-- ECCO IL BOTTONE MANCANTE -->
+    <button slot="ar-button" id="ar-button">
+      📷 VEDI IN CASA TUA (AR)
+    </button>
+
   </model-viewer>
 
 </body>

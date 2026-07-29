@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Escape Room AR</title>
+<title>Escape Room AR - Livelli Progressivi</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -16,10 +16,11 @@
     padding: 14px;
     text-align: center;
     color: #fff;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.55);
     z-index: 999;
     font-family: -apple-system, system-ui, sans-serif;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 600;
   }
 
   #lockOverlay {
@@ -43,152 +44,69 @@
     min-width: 260px;
     box-shadow: 0 0 30px rgba(255,204,0,0.35);
   }
-  #lockTitle {
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 18px;
-    letter-spacing: 2px;
-    color: #ffcc00;
-  }
-  #lockDials {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 18px;
-  }
-  .dial {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .dial-btn {
-    background: #333;
-    border: 1px solid #ffcc00;
-    color: #ffcc00;
-    font-size: 1.1rem;
-    width: 38px;
-    height: 32px;
-    border-radius: 6px;
-    cursor: pointer;
-    line-height: 1;
-  }
-  .dial-btn:active { background: #555; }
-  .dial-digit {
-    font-size: 2rem;
-    font-weight: 800;
-    width: 38px;
-    text-align: center;
-    background: #111;
-    border: 1px solid #555;
-    border-radius: 6px;
-    padding: 2px 0;
-    color: #fff;
-  }
-  #unlockBtn {
-    background: #ffcc00;
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 32px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 1px;
-  }
-  #unlockBtn:active { opacity: 0.8; }
-  #lockMsg {
-    margin-top: 14px;
-    font-size: 1rem;
-    font-weight: 600;
-    min-height: 24px;
-  }
+  #lockTitle { font-size: 1.3rem; font-weight: 700; margin-bottom: 18px; color: #ffcc00; }
+  #lockDials { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+  .dial { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .dial-btn { background: #333; border: 1px solid #ffcc00; color: #ffcc00; font-size: 1.1rem; width: 38px; height: 32px; border-radius: 6px; cursor: pointer; }
+  .dial-digit { font-size: 2rem; font-weight: 800; width: 38px; text-align: center; background: #111; border: 1px solid #555; border-radius: 6px; padding: 2px 0; color: #fff; }
+  #unlockBtn { background: #ffcc00; color: #000; border: none; border-radius: 8px; padding: 10px 32px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  #lockMsg { margin-top: 14px; font-size: 1rem; font-weight: 600; min-height: 24px; }
 </style>
 </head>
 <body>
 
-<div class="overlay">📷 Inquadra un marker stampato in casa</div>
+<div class="overlay" id="topInstruction">FASE 1: Inquadra il marker del Lucchetto</div>
 
-<!-- Overlay lucchetto: compare quando il marker 0 è rilevato -->
+<!-- Overlay Lucchetto -->
 <div id="lockOverlay">
   <div id="lockPanel">
     <div id="lockTitle">🔒 LUCCHETTO</div>
     <div id="lockDials">
-      <div class="dial">
-        <button class="dial-btn" onclick="changeDial(0,1)">▲</button>
-        <span class="dial-digit" id="d0">0</span>
-        <button class="dial-btn" onclick="changeDial(0,-1)">▼</button>
-      </div>
-      <div class="dial">
-        <button class="dial-btn" onclick="changeDial(1,1)">▲</button>
-        <span class="dial-digit" id="d1">0</span>
-        <button class="dial-btn" onclick="changeDial(1,-1)">▼</button>
-      </div>
-      <div class="dial">
-        <button class="dial-btn" onclick="changeDial(2,1)">▲</button>
-        <span class="dial-digit" id="d2">0</span>
-        <button class="dial-btn" onclick="changeDial(2,-1)">▼</button>
-      </div>
-      <div class="dial">
-        <button class="dial-btn" onclick="changeDial(3,1)">▲</button>
-        <span class="dial-digit" id="d3">0</span>
-        <button class="dial-btn" onclick="changeDial(3,-1)">▼</button>
-      </div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(0,1)">▲</button><span class="dial-digit" id="d0">0</span><button class="dial-btn" onclick="changeDial(0,-1)">▼</button></div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(1,1)">▲</button><span class="dial-digit" id="d1">0</span><button class="dial-btn" onclick="changeDial(1,-1)">▼</button></div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(2,1)">▲</button><span class="dial-digit" id="d2">0</span><button class="dial-btn" onclick="changeDial(2,-1)">▼</button></div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(3,1)">▲</button><span class="dial-digit" id="d3">0</span><button class="dial-btn" onclick="changeDial(3,-1)">▼</button></div>
     </div>
     <button id="unlockBtn" onclick="tryUnlock()">SBLOCCA</button>
     <div id="lockMsg"></div>
   </div>
 </div>
 
+<!-- Di default carichiamo lucchetto.mind -->
 <a-scene
-  mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: yes; uiLoading: yes; filterMinCF: 0.001; filterBeta: 0.01;"
+  id="mainScene"
+  mindar-image="imageTargetSrc: lucchetto.mind; autoStart: true; uiScanning: yes; uiLoading: yes;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
 >
   <a-assets>
-    <a-asset-item id="robotModel" src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"></a-asset-item>
+    <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
   </a-assets>
 
-  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <a-camera position="0 0 0" look-controls="enabled: false">
+    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .cliccabile"></a-entity>
+  </a-camera>
 
-  <!-- Marker index 0 -> lucchetto 3D -->
-  <a-entity mindar-image-target="targetIndex: 0" id="lockMarker">
-    <!-- Corpo del lucchetto -->
-    <a-box position="0 -0.04 0" width="0.18" height="0.14" depth="0.06"
-           color="#1a1a2e" roughness="0.3" metalness="0.9"
-           shadow="cast: true"></a-box>
-    <!-- Striscia dorata decorativa -->
-    <a-box position="0 -0.04 0.031" width="0.16" height="0.04" depth="0.002"
-           color="#ffcc00" roughness="0.2" metalness="1"></a-box>
-    <!-- Archetto (semicerchio) -->
-    <a-torus position="0 0.055 0" radius="0.055" radius-tubular="0.01"
-             arc="180" rotation="0 0 0"
-             color="#aaaaaa" roughness="0.2" metalness="1"
-             shadow="cast: true"></a-torus>
-    <!-- Buco della serratura -->
-    <a-cylinder position="0 -0.04 0.034" radius="0.014" height="0.005"
-                color="#000" roughness="1"></a-cylinder>
-    <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005"
-           color="#000"></a-box>
+  <!-- Entity collegata SEMPRE a targetIndex: 0 (perché ogni file .mind singolo contiene un solo target) -->
+  <a-entity mindar-image-target="targetIndex: 0" id="targetEntity">
+    
+    <!-- Contenuto del LIVELLO 1: Lucchetto 3D -->
+    <a-entity id="lucchettoContent">
+      <a-box position="0 -0.04 0" width="0.18" height="0.14" depth="0.06" color="#1a1a2e" roughness="0.3" metalness="0.9"></a-box>
+      <a-box position="0 -0.04 0.031" width="0.16" height="0.04" depth="0.002" color="#ffcc00" roughness="0.2" metalness="1"></a-box>
+      <a-torus id="shackle" position="0 0.055 0" radius="0.055" radius-tubular="0.01" arc="180" color="#aaaaaa" roughness="0.2" metalness="1"></a-torus>
+      <a-cylinder position="0 -0.04 0.034" radius="0.014" height="0.005" color="#000"></a-cylinder>
+      <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005" color="#000"></a-box>
+    </a-entity>
+
   </a-entity>
-
-  <!-- Marker index 1 -> oggetto in cucina -->
-  <a-entity mindar-image-target="targetIndex: 1">
-    <a-gltf-model
-      src="#robotModel"
-      position="0 0 0.1"
-      rotation="0 0 0"
-      scale="0.6 0.6 0.6">
-    </a-gltf-model>
-  </a-entity>
-
 </a-scene>
 
 <script>
   const digits = [0, 0, 0, 0];
-  const COMBO   = [8, 8, 8, 8];
+  const COMBO  = [8, 8, 8, 8];
 
   function changeDial(i, delta) {
     digits[i] = (digits[i] + delta + 10) % 10;
@@ -199,27 +117,69 @@
   function tryUnlock() {
     const ok = digits.every((d, i) => d === COMBO[i]);
     const msg = document.getElementById('lockMsg');
-    const btn = document.getElementById('unlockBtn');
+    
     if (ok) {
       msg.textContent = '✅ SBLOCCATO!';
       msg.style.color = '#00ff88';
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      // Animazione: l'archetto si apre nella scena AR
-      const shackle = document.querySelector('#lockMarker a-torus');
-      if (shackle) shackle.setAttribute('position', '0 0.11 0');
+      document.getElementById('shackle').setAttribute('position', '0 0.11 0');
+
+      // Attesa di 1.5 secondi prima di passare al FASE 2
+      setTimeout(() => {
+        document.getElementById('lockOverlay').style.display = 'none';
+        caricaLivello2();
+      }, 1500);
+
     } else {
       msg.textContent = '❌ Combinazione errata';
       msg.style.color = '#ff4444';
     }
   }
 
+  // FUNZIONE PER CAMBIARE IL FILE .MIND E IL MODELLO 3D
+  function caricaLivello2() {
+    const sceneEl = document.querySelector('a-scene');
+    const arSystem = sceneEl.systems["mindar-image-system"];
+    
+    // 1. Stoppiamo la scansione AR attuale
+    arSystem.stop();
+
+    // 2. Aggiorniamo le istruzioni in alto
+    document.getElementById('topInstruction').textContent = "FASE 2: Ora cerca e inquadra il marker dell'Astronauta!";
+
+    // 3. Sostituiamo il contenuto 3D dentro il target
+    const targetEntity = document.getElementById('targetEntity');
+    targetEntity.innerHTML = `
+      <a-gltf-model
+        id="astronauta"
+        class="cliccabile"
+        src="#astronautModel"
+        position="0 0 0.1"
+        scale="0.4 0.4 0.4">
+      </a-gltf-model>
+    `;
+
+    // 4. Aggiungiamo l'evento click sull'astronauta per vincere
+    setTimeout(() => {
+      document.getElementById('astronauta').addEventListener('click', () => {
+        alert('🎉 COMPLIMENTI! HAI COMPLETATO L\'ESCAPE ROOM!');
+      });
+    }, 500);
+
+    // 5. Riavviamo il sistema MindAR puntando al secondo file .mind
+    sceneEl.setAttribute('mindar-image', 'imageTargetSrc: astronauta.mind; autoStart: true;');
+    arSystem.start();
+  }
+
+  // Gestione comparsa/scomparsa UI nel Livello 1
   document.addEventListener('DOMContentLoaded', () => {
-    const marker = document.getElementById('lockMarker');
-    marker.addEventListener('targetFound', () => {
-      document.getElementById('lockOverlay').style.display = 'flex';
+    const targetEntity = document.getElementById('targetEntity');
+    targetEntity.addEventListener('targetFound', () => {
+      // Mostra la UI solo se il lucchetto è ancora presente
+      if (document.getElementById('lucchettoContent')) {
+        document.getElementById('lockOverlay').style.display = 'flex';
+      }
     });
-    marker.addEventListener('targetLost', () => {
+    targetEntity.addEventListener('targetLost', () => {
       document.getElementById('lockOverlay').style.display = 'none';
     });
   });

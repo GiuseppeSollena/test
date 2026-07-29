@@ -79,32 +79,54 @@
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  /* Pulsante "Prendi" astronauta */
-  #pickupOverlay {
+  /* ── Astronauta raccoglibile (stile geo.html) ── */
+  #astro-treasure {
     display: none;
     position: fixed;
-    bottom: 48px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-  }
-  #pickupBtn {
-    background: rgba(20,20,60,0.92);
-    border: 2px solid #7eb8ff;
-    color: #fff;
-    border-radius: 50px;
-    padding: 14px 36px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    font-family: -apple-system, system-ui, sans-serif;
+    top: 50%; left: 50%;
+    width: clamp(160px, 50vmin, 260px);
+    height: clamp(160px, 50vmin, 260px);
+    font-size: clamp(120px, 38vmin, 200px);
+    align-items: center; justify-content: center;
+    animation: float 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(100,180,255,0.7));
+    z-index: 1001;
     cursor: pointer;
+    user-select: none;
     -webkit-tap-highlight-color: transparent;
-    animation: pulse 1.4s ease-in-out infinite;
+    transform: translate(-50%, -50%);
   }
-  #pickupBtn:active { opacity: 0.7; }
-  #pickupBtn:disabled { opacity: 0.4; animation: none; cursor: default; }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(126,184,255,0.5); }
-    50%       { box-shadow: 0 0 0 10px rgba(126,184,255,0); }
+  #astro-treasure.active { display: flex; }
+  #astro-treasure.collecting {
+    animation: collect 0.7s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes float {
+    0%,100% { transform: translate(-50%, -50%) scale(1); }
+    50%      { transform: translate(-50%, calc(-50% - 18px)) scale(1); }
+  }
+  @keyframes collect {
+    0%   { transform: translate(-50%, -50%) scale(1);            opacity: 1; }
+    40%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.4) rotate(15deg); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 80px)) scale(0.2) rotate(35deg); opacity: 0; }
+  }
+  #astro-sparkle {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    font-size: 36px;
+    transform: translate(-50%, -50%);
+    z-index: 1002;
+    pointer-events: none;
+  }
+  #astro-sparkle.show {
+    display: block;
+    animation: sparkle-burst 0.7s ease-out forwards;
+  }
+  @keyframes sparkle-burst {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    100% { opacity: 0; transform: translate(-50%, calc(-50% - 40px)) scale(2); }
   }
 </style>
 </head>
@@ -112,7 +134,8 @@
 
 <div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
 <div id="toast"></div>
-<div id="pickupOverlay"><button id="pickupBtn">👨‍🚀 PRENDI</button></div>
+<div id="astro-treasure">👨‍🚀</div>
+<div id="astro-sparkle">✨</div>
 
 <!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
 <div id="lockOverlay">
@@ -216,64 +239,49 @@
       document.getElementById('lockOverlay').style.display = 'none';
     });
 
-    // 2. Pulsante HTML per raccogliere l'astronauta (touch-safe)
+    // 2. Astronauta raccoglibile — stile geo.html
     let astroPreso = false;
+    const astroTreasure = document.getElementById('astro-treasure');
+    const astroSparkle  = document.getElementById('astro-sparkle');
+
     const astroMarker = document.getElementById('astroMarker');
     astroMarker.addEventListener('targetFound', () => {
-      if (!astroPreso) document.getElementById('pickupOverlay').style.display = 'block';
+      if (!astroPreso) astroTreasure.classList.add('active');
     });
     astroMarker.addEventListener('targetLost', () => {
-      document.getElementById('pickupOverlay').style.display = 'none';
+      astroTreasure.classList.remove('active');
     });
 
-    let lastPickup = 0;
-    function raccogliAstronauta(e) {
-      if (e.type === 'touchstart') e.preventDefault();
-      const now = Date.now();
-      if (now - lastPickup < 300) return;
-      lastPickup = now;
+    function onCollectAstronaut(e) {
+      if (e && e.type === 'touchstart') e.preventDefault();
       if (astroPreso) return;
       astroPreso = true;
-      document.getElementById('pickupOverlay').style.display = 'none';
 
-      const astro = document.getElementById('astronauta');
+      // Stessa logica di geo.html
+      astroTreasure.classList.add('collecting');
+      astroSparkle.classList.remove('show');
+      void astroSparkle.offsetWidth;          // forza replay animazione
+      astroSparkle.classList.add('show');
 
-      // Spin + scale-up
-      astro.setAttribute('animation__spin', {
-        property: 'rotation', to: '0 360 20',
-        dur: 350, easing: 'easeInQuad'
-      });
-      astro.setAttribute('animation__up', {
-        property: 'scale', to: '1.0 1.0 1.0',
-        dur: 200, easing: 'easeOutBack'
-      });
+      // Nascondi anche il modello 3D in AR
+      const astro3d = document.getElementById('astronauta');
+      if (astro3d) astro3d.setAttribute('visible', 'false');
 
-      // Poi scompare verso l'alto
       setTimeout(() => {
-        astro.setAttribute('animation__vanish', {
-          property: 'scale', to: '0 0 0',
-          dur: 300, easing: 'easeInQuad'
-        });
-        astro.setAttribute('animation__rise', {
-          property: 'position', to: '0 0.4 0.1',
-          dur: 300, easing: 'easeInQuad'
-        });
-      }, 220);
+        astroTreasure.classList.remove('active', 'collecting');
+        astroSparkle.classList.remove('show');
 
-      // Toast visivo
-      const toast = document.getElementById('toast');
-      toast.textContent = '👨‍🚀 Oggetto preso!';
-      toast.classList.remove('hide');
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-        toast.classList.add('hide');
-      }, 2000);
+        // Toast
+        const toast = document.getElementById('toast');
+        toast.textContent = '👨‍🚀 Oggetto preso!';
+        toast.classList.remove('hide');
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 2000);
+      }, 750);
     }
 
-    const btn = document.getElementById('pickupBtn');
-    btn.addEventListener('click', raccogliAstronauta);
-    btn.addEventListener('touchstart', raccogliAstronauta, { passive: false });
+    astroTreasure.addEventListener('click', onCollectAstronaut);
+    astroTreasure.addEventListener('touchstart', onCollectAstronaut, { passive: false });
   });
 </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Escape Room AR - Livelli Progressivi</title>
+<title>Escape Room AR - Marker Liberi</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -55,9 +55,9 @@
 </head>
 <body>
 
-<div class="overlay" id="topInstruction">FASE 1: Inquadra il marker del Lucchetto</div>
+<div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
 
-<!-- Overlay Lucchetto -->
+<!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
 <div id="lockOverlay">
   <div id="lockPanel">
     <div id="lockTitle">🔒 LUCCHETTO</div>
@@ -72,10 +72,8 @@
   </div>
 </div>
 
-<!-- Di default carichiamo lucchetto.mind -->
 <a-scene
-  id="mainScene"
-  mindar-image="imageTargetSrc: lucchetto.mind; autoStart: true; uiScanning: yes; uiLoading: yes;"
+  mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: yes; uiLoading: yes; filterMinCF: 0.001; filterBeta: 0.01;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
   vr-mode-ui="enabled: false"
@@ -85,26 +83,36 @@
     <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
   </a-assets>
 
+  <!-- Telecamera abilitata al raycast per fare tap sui modelli 3D -->
   <a-camera position="0 0 0" look-controls="enabled: false">
     <a-entity cursor="rayOrigin: mouse" raycaster="objects: .cliccabile"></a-entity>
   </a-camera>
 
-  <!-- Entity collegata SEMPRE a targetIndex: 0 (perché ogni file .mind singolo contiene un solo target) -->
-  <a-entity mindar-image-target="targetIndex: 0" id="targetEntity">
-    
-    <!-- Contenuto del LIVELLO 1: Lucchetto 3D -->
-    <a-entity id="lucchettoContent">
-      <a-box position="0 -0.04 0" width="0.18" height="0.14" depth="0.06" color="#1a1a2e" roughness="0.3" metalness="0.9"></a-box>
-      <a-box position="0 -0.04 0.031" width="0.16" height="0.04" depth="0.002" color="#ffcc00" roughness="0.2" metalness="1"></a-box>
-      <a-torus id="shackle" position="0 0.055 0" radius="0.055" radius-tubular="0.01" arc="180" color="#aaaaaa" roughness="0.2" metalness="1"></a-torus>
-      <a-cylinder position="0 -0.04 0.034" radius="0.014" height="0.005" color="#000"></a-cylinder>
-      <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005" color="#000"></a-box>
-    </a-entity>
-
+  <!-- MARKER INDEX 0 -> LUCCHETTO 3D -->
+  <a-entity mindar-image-target="targetIndex: 0" id="lockMarker">
+    <a-box position="0 -0.04 0" width="0.18" height="0.14" depth="0.06" color="#1a1a2e" roughness="0.3" metalness="0.9"></a-box>
+    <a-box position="0 -0.04 0.031" width="0.16" height="0.04" depth="0.002" color="#ffcc00" roughness="0.2" metalness="1"></a-box>
+    <a-torus id="shackle" position="0 0.055 0" radius="0.055" radius-tubular="0.01" arc="180" color="#aaaaaa" roughness="0.2" metalness="1"></a-torus>
+    <a-cylinder position="0 -0.04 0.034" radius="0.014" height="0.005" color="#000"></a-cylinder>
+    <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005" color="#000"></a-box>
   </a-entity>
+
+  <!-- MARKER INDEX 1 -> ASTRONAUTA CLICCABILE -->
+  <a-entity mindar-image-target="targetIndex: 1" id="astroMarker">
+    <a-gltf-model
+      id="astronauta"
+      class="cliccabile"
+      src="#astronautModel"
+      position="0 0 0.1"
+      rotation="0 0 0"
+      scale="0.4 0.4 0.4">
+    </a-gltf-model>
+  </a-entity>
+
 </a-scene>
 
 <script>
+  // --- LOGICA LUCCHETTO (MARKER 0) ---
   const digits = [0, 0, 0, 0];
   const COMBO  = [8, 8, 8, 8];
 
@@ -117,70 +125,37 @@
   function tryUnlock() {
     const ok = digits.every((d, i) => d === COMBO[i]);
     const msg = document.getElementById('lockMsg');
+    const btn = document.getElementById('unlockBtn');
     
     if (ok) {
       msg.textContent = '✅ SBLOCCATO!';
       msg.style.color = '#00ff88';
-      document.getElementById('shackle').setAttribute('position', '0 0.11 0');
-
-      // Attesa di 1.5 secondi prima di passare al FASE 2
-      setTimeout(() => {
-        document.getElementById('lockOverlay').style.display = 'none';
-        caricaLivello2();
-      }, 1500);
-
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      
+      // Anima l'archetto 3D
+      const shackle = document.querySelector('#shackle');
+      if (shackle) shackle.setAttribute('position', '0 0.11 0');
     } else {
       msg.textContent = '❌ Combinazione errata';
       msg.style.color = '#ff4444';
     }
   }
 
-  // FUNZIONE PER CAMBIARE IL FILE .MIND E IL MODELLO 3D
-  function caricaLivello2() {
-    const sceneEl = document.querySelector('a-scene');
-    const arSystem = sceneEl.systems["mindar-image-system"];
-    
-    // 1. Stoppiamo la scansione AR attuale
-    arSystem.stop();
-
-    // 2. Aggiorniamo le istruzioni in alto
-    document.getElementById('topInstruction').textContent = "FASE 2: Ora cerca e inquadra il marker dell'Astronauta!";
-
-    // 3. Sostituiamo il contenuto 3D dentro il target
-    const targetEntity = document.getElementById('targetEntity');
-    targetEntity.innerHTML = `
-      <a-gltf-model
-        id="astronauta"
-        class="cliccabile"
-        src="#astronautModel"
-        position="0 0 0.1"
-        scale="0.4 0.4 0.4">
-      </a-gltf-model>
-    `;
-
-    // 4. Aggiungiamo l'evento click sull'astronauta per vincere
-    setTimeout(() => {
-      document.getElementById('astronauta').addEventListener('click', () => {
-        alert('🎉 COMPLIMENTI! HAI COMPLETATO L\'ESCAPE ROOM!');
-      });
-    }, 500);
-
-    // 5. Riavviamo il sistema MindAR puntando al secondo file .mind
-    sceneEl.setAttribute('mindar-image', 'imageTargetSrc: astronauta.mind; autoStart: true;');
-    arSystem.start();
-  }
-
-  // Gestione comparsa/scomparsa UI nel Livello 1
   document.addEventListener('DOMContentLoaded', () => {
-    const targetEntity = document.getElementById('targetEntity');
-    targetEntity.addEventListener('targetFound', () => {
-      // Mostra la UI solo se il lucchetto è ancora presente
-      if (document.getElementById('lucchettoContent')) {
-        document.getElementById('lockOverlay').style.display = 'flex';
-      }
+    // 1. Gestione visibilità pannello HTML SOLO per Marker 0 (Lucchetto)
+    const lockMarker = document.getElementById('lockMarker');
+    lockMarker.addEventListener('targetFound', () => {
+      document.getElementById('lockOverlay').style.display = 'flex';
     });
-    targetEntity.addEventListener('targetLost', () => {
+    lockMarker.addEventListener('targetLost', () => {
       document.getElementById('lockOverlay').style.display = 'none';
+    });
+
+    // 2. Gestione Click SOLO per Marker 1 (Astronauta)
+    const astro = document.getElementById('astronauta');
+    astro.addEventListener('click', () => {
+      alert('👨‍🚀 Hai cliccato l\'astronauta!');
     });
   });
 </script>

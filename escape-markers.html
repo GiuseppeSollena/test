@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Escape Room AR</title>
+<title>Escape Room AR - Lucchetto</title>
 
+<!-- Carichiamo le librerie A-Frame, MindAR e anche A-Frame Extras per gestire animazioni e gerarchie dei modelli GLTF -->
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
 <style>
   body { margin: 0; overflow: hidden; background: #000; }
@@ -21,11 +23,25 @@
     font-family: -apple-system, system-ui, sans-serif;
     font-size: 0.9rem;
   }
+  #messaggio {
+    display: none; /* Nascosto di default */
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: #4CAF50; /* Verde per il successo */
+    color: white;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 1000;
+  }
 </style>
 </head>
 <body>
 
-<div class="overlay">📷 Inquadra un marker stampato in casa</div>
+<div class="overlay">📷 Inquadra il marker per sbloccare il lucchetto</div>
+<div id="messaggio">✅ CODICE CORRETTO! HAI SBLOCCATO L'INDIZIO!</div>
 
 <a-scene
   mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: yes; uiLoading: yes; filterMinCF: 0.001; filterBeta: 0.01;"
@@ -35,23 +51,41 @@
   device-orientation-permission-ui="enabled: false"
 >
   <a-assets>
-    <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
+    <!-- NOTA IMPORTANTE: Questo è un modello 3D generico di un lucchetto a combinazione.
+         Per farlo funzionare perfettamente, i dischi numerati devono essere oggetti separati chiamati,
+         per esempio, "Dial1", "Dial2", etc., all'interno del file GLTF.
+         Se non hai un modello adatto, puoi usarne uno statico e mettere dei pulsanti HTML trasparenti sopra.
+         In questo esempio, usiamo un modello segnaposto. Se ne hai uno tuo, cambialo qui. -->
+    <a-asset-item id="lucchettoModel" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF/BoomBox.gltf"></a-asset-item>
     <a-asset-item id="robotModel" src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"></a-asset-item>
   </a-assets>
 
-  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <!-- Aggiungiamo un cursore per permettere l'interazione via mouse o tap -->
+  <a-camera position="0 0 0" look-controls="enabled: false">
+    <a-cursor fuse="false" raycaster="objects: .cliccabile"></a-cursor>
+  </a-camera>
 
-  <!-- Marker index 0 -> oggetto sul divano -->
-  <a-entity mindar-image-target="targetIndex: 0">
+  <!-- Marker index 0 -> Il Lucchetto (Sostituisce l'astronauta) -->
+  <a-entity id="areaLucchetto" mindar-image-target="targetIndex: 0">
+    
+    <!-- Modello Lucchetto principale -->
     <a-gltf-model
-      src="#astronautModel"
-      position="0 0 0.1"
+      src="#lucchettoModel"
+      position="0 0 0"
       rotation="0 0 0"
-      scale="0.4 0.4 0.4">
+      scale="20 20 20"> <!-- Scala molto alta perché il modello BoomBox è minuscolo -->
     </a-gltf-model>
+
+    <!-- GHIERE INTERATTIVE (Rettangoli trasparenti clikkabili posti sopra i numeri immaginari) -->
+    <!-- Ogni ghiera ha un ID, la classe .cliccabile e un componente custom 'ghiera-ruota' -->
+    <a-box id="ghiera1" class="cliccabile" position="-0.15 0 0.05" scale="0.08 0.15 0.02" material="opacity: 0.3; color: red" ghiera-ruota="target: #lucchettoModel; node: Dial1; combinazione: 8; index: 0"></a-box>
+    <a-box id="ghiera2" class="cliccabile" position="-0.05 0 0.05" scale="0.08 0.15 0.02" material="opacity: 0.3; color: blue" ghiera-ruota="target: #lucchettoModel; node: Dial2; combinazione: 8; index: 1"></a-box>
+    <a-box id="ghiera3" class="cliccabile" position="0.05 0 0.05" scale="0.08 0.15 0.02" material="opacity: 0.3; color: green" ghiera-ruota="target: #lucchettoModel; node: Dial3; combinazione: 8; index: 2"></a-box>
+    <a-box id="ghiera4" class="cliccabile" position="0.15 0 0.05" scale="0.08 0.15 0.02" material="opacity: 0.3; color: yellow" ghiera-ruota="target: #lucchettoModel; node: Dial4; combinazione: 8; index: 3"></a-box>
+
   </a-entity>
 
-  <!-- Marker index 1 -> oggetto in cucina -->
+  <!-- Marker index 1 -> L'oggetto in cucina -->
   <a-entity mindar-image-target="targetIndex: 1">
     <a-gltf-model
       src="#robotModel"
@@ -62,6 +96,78 @@
   </a-entity>
 
 </a-scene>
+
+<script>
+  // Logica di Gioco Globale
+  let combinazioneInserita = [0, 0, 0, 0];
+  const combinazioneCorretta = [8, 8, 8, 8];
+  let lucchettoSbloccato = false;
+
+  const messaggioSuccesso = document.getElementById('messaggio');
+
+  // Funzione per verificare la combinazione
+  function verificaSblocco() {
+    if (lucchettoSbloccato) return; // Già sbloccato
+
+    // Converte gli array in stringhe per un confronto facile
+    if (combinazioneInserita.join('') === combinazioneCorretta.join('')) {
+      lucchettoSbloccato = true;
+      console.log("Combinazione Corretta! 8888");
+      
+      // Mostra un messaggio a schermo (UI HTML)
+      messaggioSuccesso.style.display = 'block';
+
+      // Facoltativo: Puoi triggerare un'animazione nel modello 3D (es. l'arco del lucchetto che si apre)
+      // se il tuo modello la supporta. Esempio:
+      // document.querySelector('#lucchettoModel').setAttribute('animation-mixer', 'clip: Open; loop: once');
+    }
+  }
+
+  // Componente Custom A-Frame 'ghiera-ruota'
+  // Gestisce la rotazione logica dei numeri e la rotazione visiva del modello 3D
+  AFRAME.registerComponent('ghiera-ruota', {
+    schema: {
+      target: {type: 'selector'}, // Il modello 3D principale
+      node: {type: 'string'},   // Il nome del sub-oggetto (ghiera) nel modello 3D
+      combinazione: {type: 'number'}, // Il numero corretto per QUESTA ghiera
+      index: {type: 'number'}     // L'indice nell'array combinazioneInserita (0, 1, 2, 3)
+    },
+
+    init: function () {
+      let data = this.data;
+      let el = this.el;
+      
+      // Valore logico attuale di questa ghiera (0-9)
+      this.valoreAttuale = 0;
+
+      el.addEventListener('click', () => {
+        if (lucchettoSbloccato) return; // Lucchetto già aperto
+
+        // 1. Incrementa il valore logico
+        this.valoreAttuale = (this.valoreAttuale + 1) % 10;
+        console.log(`Ghiera ${data.index + 1} cliccata. Nuovo valore: ${this.valoreAttuale}`);
+
+        // 2. Aggiorna lo stato globale del gioco
+        combinazioneInserita[data.index] = this.valoreAttuale;
+
+        // 3. Ruota Visivamente il sub-oggetto nel modello 3D (se esiste)
+        const targetModel = data.target.getObject3D('mesh');
+        if (targetModel) {
+          // Cerca il sotto-oggetto specifico (es. "Dial1")
+          const meshGhiera = targetModel.getObjectByName(data.node);
+          if (meshGhiera) {
+            // Ruota di 36 gradi per ogni numero (360 gradi / 10 numeri)
+            // L'asse di rotazione (x, y, z) dipende da come è orientato il tuo modello
+            //meshGhiera.rotation.z += THREE.MathUtils.degToRad(36); 
+          }
+        }
+        
+        // 4. Verifica se abbiamo vinto
+        verificaSblocco();
+      });
+    }
+  });
+</script>
 
 </body>
 </html>

@@ -160,7 +160,6 @@
   device-orientation-permission-ui="enabled: false"
 >
   <a-assets>
-    <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
   </a-assets>
 
   <!-- Telecamera: Aggiungiamo direttamente il raycaster alla camera per massima precisione -->
@@ -176,25 +175,8 @@
     <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005" color="#000"></a-box>
   </a-entity>
 
-  <!-- MARKER INDEX 1 -> ASTRONAUTA CLICCABILE -->
+  <!-- MARKER INDEX 1 -> ASTRONAUTA (solo rilevamento posizione, visuale 2D overlay) -->
   <a-entity mindar-image-target="targetIndex: 1" id="astroMarker">
-    <!-- Modello Visivo 3D -->
-    <a-gltf-model
-      id="astronauta"
-      src="#astronautModel"
-      position="0 0 0.1"
-      rotation="0 0 0"
-      scale="0.7 0.7 0.7">
-    </a-gltf-model>
-
-    <!-- Box Cliccabile Invisibile attorno all'astronauta per catturare SEMPRE il tap/click -->
-    <a-box
-      id="astroHitbox"
-      class="cliccabile"
-      position="0 0.2 0.1"
-      width="0.5" height="0.8" depth="0.5"
-      material="opacity: 0.0; transparent: true">
-    </a-box>
   </a-entity>
 
 </a-scene>
@@ -263,11 +245,8 @@
       void astroSparkle.offsetWidth;          // forza replay animazione
       astroSparkle.classList.add('show');
 
-      // Nascondi anche il modello 3D in AR
-      const astro3d = document.getElementById('astronauta');
-      if (astro3d) astro3d.setAttribute('visible', 'false');
-
       setTimeout(() => {
+        // Nascondi overlay
         astroTreasure.classList.remove('active', 'collecting');
         astroSparkle.classList.remove('show');
 

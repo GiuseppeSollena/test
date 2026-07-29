@@ -51,11 +51,39 @@
   .dial-digit { font-size: 2rem; font-weight: 800; width: 38px; text-align: center; background: #111; border: 1px solid #555; border-radius: 6px; padding: 2px 0; color: #fff; }
   #unlockBtn { background: #ffcc00; color: #000; border: none; border-radius: 8px; padding: 10px 32px; font-size: 1rem; font-weight: 700; cursor: pointer; }
   #lockMsg { margin-top: 14px; font-size: 1rem; font-weight: 600; min-height: 24px; }
+
+  /* Toast "oggetto preso" */
+  #toast {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.4);
+    background: rgba(0,200,100,0.95);
+    color: #fff;
+    padding: 18px 36px;
+    border-radius: 60px;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), opacity 0.25s ease;
+  }
+  #toast.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  #toast.hide {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
 </style>
 </head>
 <body>
 
 <div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
+<div id="toast"></div>
 
 <!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
 <div id="lockOverlay">
@@ -65,7 +93,7 @@
       <div class="dial"><button class="dial-btn" onclick="changeDial(0,1)">▲</button><span class="dial-digit" id="d0">0</span><button class="dial-btn" onclick="changeDial(0,-1)">▼</button></div>
       <div class="dial"><button class="dial-btn" onclick="changeDial(1,1)">▲</button><span class="dial-digit" id="d1">0</span><button class="dial-btn" onclick="changeDial(1,-1)">▼</button></div>
       <div class="dial"><button class="dial-btn" onclick="changeDial(2,1)">▲</button><span class="dial-digit" id="d2">0</span><button class="dial-btn" onclick="changeDial(2,-1)">▼</button></div>
-      <div class="dial"><button class="dial-btn" onclick="changeDial(3,1)">▲</button><span class="dial-digit" id="d3">0</span><button class="dial-btn" onclick="changeDial(3,-1)">▼</button></div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(3,1)">▲</button><span class="dial-digit" id="d3">0</span><button class="dial-digit" id="d3">0</span><button class="dial-btn" onclick="changeDial(3,-1)">▼</button></div>
     </div>
     <button id="unlockBtn" onclick="tryUnlock()">SBLOCCA</button>
     <div id="lockMsg"></div>
@@ -83,9 +111,8 @@
     <a-asset-item id="astronautModel" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"></a-asset-item>
   </a-assets>
 
-  <!-- Telecamera abilitata al raycast per fare tap sui modelli 3D -->
-  <a-camera position="0 0 0" look-controls="enabled: false">
-    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .cliccabile"></a-entity>
+  <!-- Telecamera: Aggiungiamo direttamente il raycaster alla camera per massima precisione -->
+  <a-camera position="0 0 0" look-controls="enabled: false" raycaster="objects: .cliccabile" cursor="rayOrigin: mouse">
   </a-camera>
 
   <!-- MARKER INDEX 0 -> LUCCHETTO 3D -->
@@ -99,14 +126,23 @@
 
   <!-- MARKER INDEX 1 -> ASTRONAUTA CLICCABILE -->
   <a-entity mindar-image-target="targetIndex: 1" id="astroMarker">
+    <!-- Modello Visivo 3D -->
     <a-gltf-model
       id="astronauta"
-      class="cliccabile"
       src="#astronautModel"
       position="0 0 0.1"
       rotation="0 0 0"
-      scale="0.4 0.4 0.4">
+      scale="0.7 0.7 0.7">
     </a-gltf-model>
+
+    <!-- Box Cliccabile Invisibile attorno all'astronauta per catturare SEMPRE il tap/click -->
+    <a-box
+      id="astroHitbox"
+      class="cliccabile"
+      position="0 0.2 0.1"
+      width="0.5" height="0.8" depth="0.5"
+      material="opacity: 0.0; transparent: true">
+    </a-box>
   </a-entity>
 
 </a-scene>
@@ -133,7 +169,6 @@
       btn.disabled = true;
       btn.style.opacity = '0.5';
       
-      // Anima l'archetto 3D
       const shackle = document.querySelector('#shackle');
       if (shackle) shackle.setAttribute('position', '0 0.11 0');
     } else {
@@ -152,10 +187,46 @@
       document.getElementById('lockOverlay').style.display = 'none';
     });
 
-    // 2. Gestione Click SOLO per Marker 1 (Astronauta)
-    const astro = document.getElementById('astronauta');
-    astro.addEventListener('click', () => {
-      alert('👨‍🚀 Hai cliccato l\'astronauta!');
+    // 2. Animazione "raccogli" sull'Astronauta
+    let astroPreso = false;
+    const hitbox = document.getElementById('astroHitbox');
+    hitbox.addEventListener('click', () => {
+      if (astroPreso) return;
+      astroPreso = true;
+
+      const astro = document.getElementById('astronauta');
+
+      // Spin + leggero scale-up
+      astro.setAttribute('animation__spin', {
+        property: 'rotation', to: '0 360 20',
+        dur: 350, easing: 'easeInQuad'
+      });
+      astro.setAttribute('animation__up', {
+        property: 'scale', to: '1.0 1.0 1.0',
+        dur: 200, easing: 'easeOutBack'
+      });
+
+      // Poi scompare verso l'alto
+      setTimeout(() => {
+        astro.setAttribute('animation__vanish', {
+          property: 'scale', to: '0 0 0',
+          dur: 300, easing: 'easeInQuad'
+        });
+        astro.setAttribute('animation__rise', {
+          property: 'position', to: '0 0.4 0.1',
+          dur: 300, easing: 'easeInQuad'
+        });
+      }, 220);
+
+      // Toast visivo
+      const toast = document.getElementById('toast');
+      toast.textContent = '👨\u200d🚀 Oggetto preso!';
+      toast.classList.remove('hide');
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+      }, 2000);
     });
   });
 </script>

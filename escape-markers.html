@@ -79,13 +79,14 @@
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  /* ── Astronauta raccoglibile (stile geo.html) ── */
-  #astro-treasure {
+  /* ── Oggetti raccoglibili (stile geo.html) ── */
+  .treasure-item {
     display: none;
     position: fixed;
     top: 50%; left: 50%;
     width: clamp(160px, 50vmin, 260px);
     height: clamp(160px, 50vmin, 260px);
+    font-size: clamp(100px, 32vmin, 180px);
     align-items: center; justify-content: center;
     animation: float 2s ease-in-out infinite;
     filter: drop-shadow(0 0 24px rgba(100,180,255,0.7));
@@ -95,14 +96,8 @@
     -webkit-tap-highlight-color: transparent;
     transform: translate(-50%, -50%);
   }
-  #astro-treasure img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-  }
-  #astro-treasure.active { display: flex; }
-  #astro-treasure.collecting {
+  .treasure-item.active { display: flex; }
+  .treasure-item.collecting {
     animation: collect 0.7s ease-out forwards;
     pointer-events: none;
   }
@@ -139,8 +134,10 @@
 
 <div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
 <div id="toast"></div>
-<div id="astro-treasure"><img src="vigile.png" alt="vigile"></div>
-<div id="astro-sparkle">✨</div>
+<div id="vigile-treasure"   class="treasure-item">👮</div>
+<div id="semaforo-treasure" class="treasure-item">🚦</div>
+<div id="stop-treasure"     class="treasure-item">🛑</div>
+<div id="sparkle">✨</div>
 
 <!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
 <div id="lockOverlay">
@@ -175,9 +172,14 @@
   <a-entity mindar-image-target="targetIndex: 0" id="lockMarker">
   </a-entity>
 
-  <!-- MARKER INDEX 1 -> ASTRONAUTA (solo rilevamento posizione, visuale 2D overlay) -->
-  <a-entity mindar-image-target="targetIndex: 1" id="astroMarker">
-  </a-entity>
+  <!-- MARKER INDEX 1 -> VIGILE -->
+  <a-entity mindar-image-target="targetIndex: 1" id="vigileMarker"></a-entity>
+
+  <!-- MARKER INDEX 2 -> SEMAFORO -->
+  <a-entity mindar-image-target="targetIndex: 2" id="semaforoMarker"></a-entity>
+
+  <!-- MARKER INDEX 3 -> STOP -->
+  <a-entity mindar-image-target="targetIndex: 3" id="stopMarker"></a-entity>
 
 </a-scene>
 
@@ -218,46 +220,52 @@
       document.getElementById('lockOverlay').style.display = 'none';
     });
 
-    // 2. Astronauta raccoglibile — stile geo.html
-    let astroPreso = false;
-    const astroTreasure = document.getElementById('astro-treasure');
-    const astroSparkle  = document.getElementById('astro-sparkle');
+    // 2. Oggetti raccoglibili (marker 1, 2, 3)
+    const collectibles = [
+      { markerId: 'vigileMarker',   elemId: 'vigile-treasure',   toast: '👮 Vigile trovato!' },
+      { markerId: 'semaforoMarker', elemId: 'semaforo-treasure', toast: '🚦 Semaforo trovato!' },
+      { markerId: 'stopMarker',     elemId: 'stop-treasure',     toast: '🛑 Segnale STOP trovato!' },
+    ];
 
-    const astroMarker = document.getElementById('astroMarker');
-    astroMarker.addEventListener('targetFound', () => {
-      if (!astroPreso) astroTreasure.classList.add('active');
+    const sparkle = document.getElementById('sparkle');
+
+    collectibles.forEach(({ markerId, elemId, toast }) => {
+      let preso = false;
+      const treasure = document.getElementById(elemId);
+      const marker   = document.getElementById(markerId);
+
+      marker.addEventListener('targetFound', () => {
+        if (!preso) treasure.classList.add('active');
+      });
+      marker.addEventListener('targetLost', () => {
+        treasure.classList.remove('active');
+      });
+
+      function onCollect(e) {
+        if (e && e.type === 'touchstart') e.preventDefault();
+        if (preso) return;
+        preso = true;
+
+        treasure.classList.add('collecting');
+        sparkle.classList.remove('show');
+        void sparkle.offsetWidth;
+        sparkle.classList.add('show');
+
+        setTimeout(() => {
+          treasure.classList.remove('active', 'collecting');
+          sparkle.classList.remove('show');
+
+          const toastEl = document.getElementById('toast');
+          toastEl.textContent = toast;
+          toastEl.classList.remove('hide');
+          toastEl.classList.add('show');
+          setTimeout(() => { toastEl.classList.remove('show'); toastEl.classList.add('hide'); }, 2000);
+        }, 750);
+      }
+
+      treasure.addEventListener('click', onCollect);
+      treasure.addEventListener('touchstart', onCollect, { passive: false });
     });
-    astroMarker.addEventListener('targetLost', () => {
-      astroTreasure.classList.remove('active');
-    });
-
-    function onCollectAstronaut(e) {
-      if (e && e.type === 'touchstart') e.preventDefault();
-      if (astroPreso) return;
-      astroPreso = true;
-
-      // Stessa logica di geo.html
-      astroTreasure.classList.add('collecting');
-      astroSparkle.classList.remove('show');
-      void astroSparkle.offsetWidth;          // forza replay animazione
-      astroSparkle.classList.add('show');
-
-      setTimeout(() => {
-        // Nascondi overlay
-        astroTreasure.classList.remove('active', 'collecting');
-        astroSparkle.classList.remove('show');
-
-        // Toast
-        const toast = document.getElementById('toast');
-        toast.textContent = '� Vigile trovato!';
-        toast.classList.remove('hide');
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 2000);
-      }, 750);
-    }
-
-    astroTreasure.addEventListener('click', onCollectAstronaut);
-    astroTreasure.addEventListener('touchstart', onCollectAstronaut, { passive: false });
   });
 </script>
 </body>

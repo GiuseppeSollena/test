@@ -78,12 +78,41 @@
     opacity: 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
+
+  /* Pulsante "Prendi" astronauta */
+  #pickupOverlay {
+    display: none;
+    position: fixed;
+    bottom: 48px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+  }
+  #pickupBtn {
+    background: rgba(20,20,60,0.92);
+    border: 2px solid #7eb8ff;
+    color: #fff;
+    border-radius: 50px;
+    padding: 14px 36px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: -apple-system, system-ui, sans-serif;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  #pickupBtn:active { opacity: 0.7; }
+  #pickupBtn:disabled { opacity: 0.4; animation: none; cursor: default; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(126,184,255,0.5); }
+    50%       { box-shadow: 0 0 0 10px rgba(126,184,255,0); }
+  }
 </style>
 </head>
 <body>
 
 <div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
 <div id="toast"></div>
+<div id="pickupOverlay"><button id="pickupBtn">👨‍🚀 PRENDI</button></div>
 
 <!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
 <div id="lockOverlay">
@@ -93,7 +122,7 @@
       <div class="dial"><button class="dial-btn" onclick="changeDial(0,1)">▲</button><span class="dial-digit" id="d0">0</span><button class="dial-btn" onclick="changeDial(0,-1)">▼</button></div>
       <div class="dial"><button class="dial-btn" onclick="changeDial(1,1)">▲</button><span class="dial-digit" id="d1">0</span><button class="dial-btn" onclick="changeDial(1,-1)">▼</button></div>
       <div class="dial"><button class="dial-btn" onclick="changeDial(2,1)">▲</button><span class="dial-digit" id="d2">0</span><button class="dial-btn" onclick="changeDial(2,-1)">▼</button></div>
-      <div class="dial"><button class="dial-btn" onclick="changeDial(3,1)">▲</button><span class="dial-digit" id="d3">0</span><button class="dial-digit" id="d3">0</span><button class="dial-btn" onclick="changeDial(3,-1)">▼</button></div>
+      <div class="dial"><button class="dial-btn" onclick="changeDial(3,1)">▲</button><span class="dial-digit" id="d3">0</span><button class="dial-btn" onclick="changeDial(3,-1)">▼</button></div>
     </div>
     <button id="unlockBtn" onclick="tryUnlock()">SBLOCCA</button>
     <div id="lockMsg"></div>
@@ -112,7 +141,7 @@
   </a-assets>
 
   <!-- Telecamera: Aggiungiamo direttamente il raycaster alla camera per massima precisione -->
-  <a-camera position="0 0 0" look-controls="enabled: false" raycaster="objects: .cliccabile" cursor="rayOrigin: mouse">
+  <a-camera position="0 0 0" look-controls="enabled: false">
   </a-camera>
 
   <!-- MARKER INDEX 0 -> LUCCHETTO 3D -->
@@ -187,16 +216,29 @@
       document.getElementById('lockOverlay').style.display = 'none';
     });
 
-    // 2. Animazione "raccogli" sull'Astronauta
+    // 2. Pulsante HTML per raccogliere l'astronauta (touch-safe)
     let astroPreso = false;
-    const hitbox = document.getElementById('astroHitbox');
-    hitbox.addEventListener('click', () => {
+    const astroMarker = document.getElementById('astroMarker');
+    astroMarker.addEventListener('targetFound', () => {
+      if (!astroPreso) document.getElementById('pickupOverlay').style.display = 'block';
+    });
+    astroMarker.addEventListener('targetLost', () => {
+      document.getElementById('pickupOverlay').style.display = 'none';
+    });
+
+    let lastPickup = 0;
+    function raccogliAstronauta(e) {
+      if (e.type === 'touchstart') e.preventDefault();
+      const now = Date.now();
+      if (now - lastPickup < 300) return;
+      lastPickup = now;
       if (astroPreso) return;
       astroPreso = true;
+      document.getElementById('pickupOverlay').style.display = 'none';
 
       const astro = document.getElementById('astronauta');
 
-      // Spin + leggero scale-up
+      // Spin + scale-up
       astro.setAttribute('animation__spin', {
         property: 'rotation', to: '0 360 20',
         dur: 350, easing: 'easeInQuad'
@@ -220,14 +262,18 @@
 
       // Toast visivo
       const toast = document.getElementById('toast');
-      toast.textContent = '👨\u200d🚀 Oggetto preso!';
+      toast.textContent = '👨‍🚀 Oggetto preso!';
       toast.classList.remove('hide');
       toast.classList.add('show');
       setTimeout(() => {
         toast.classList.remove('show');
         toast.classList.add('hide');
       }, 2000);
-    });
+    }
+
+    const btn = document.getElementById('pickupBtn');
+    btn.addEventListener('click', raccogliAstronauta);
+    btn.addEventListener('touchstart', raccogliAstronauta, { passive: false });
   });
 </script>
 </body>

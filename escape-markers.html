@@ -86,7 +86,6 @@
     top: 50%; left: 50%;
     width: clamp(160px, 50vmin, 260px);
     height: clamp(160px, 50vmin, 260px);
-    font-size: clamp(120px, 38vmin, 200px);
     align-items: center; justify-content: center;
     animation: float 2s ease-in-out infinite;
     filter: drop-shadow(0 0 24px rgba(100,180,255,0.7));
@@ -95,6 +94,12 @@
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     transform: translate(-50%, -50%);
+  }
+  #astro-treasure img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
   }
   #astro-treasure.active { display: flex; }
   #astro-treasure.collecting {
@@ -134,7 +139,7 @@
 
 <div class="overlay">📷 Inquadra un qualsiasi marker in casa</div>
 <div id="toast"></div>
-<div id="astro-treasure">👨‍🚀</div>
+<div id="astro-treasure"><img src="vigile.png" alt="vigile"></div>
 <div id="astro-sparkle">✨</div>
 
 <!-- UI Lucchetto (Compare SOLO quando si inquadra il Marker 0) -->
@@ -244,7 +249,7 @@
 
         // Toast
         const toast = document.getElementById('toast');
-        toast.textContent = '👨‍🚀 Oggetto preso!';
+        toast.textContent = '� Vigile trovato!';
         toast.classList.remove('hide');
         toast.classList.add('show');
         setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 2000);

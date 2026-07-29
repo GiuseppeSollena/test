@@ -166,13 +166,8 @@
   <a-camera position="0 0 0" look-controls="enabled: false">
   </a-camera>
 
-  <!-- MARKER INDEX 0 -> LUCCHETTO 3D -->
+  <!-- MARKER INDEX 0 -> LUCCHETTO (solo rilevamento, UI in overlay HTML) -->
   <a-entity mindar-image-target="targetIndex: 0" id="lockMarker">
-    <a-box position="0 -0.04 0" width="0.18" height="0.14" depth="0.06" color="#1a1a2e" roughness="0.3" metalness="0.9"></a-box>
-    <a-box position="0 -0.04 0.031" width="0.16" height="0.04" depth="0.002" color="#ffcc00" roughness="0.2" metalness="1"></a-box>
-    <a-torus id="shackle" position="0 0.055 0" radius="0.055" radius-tubular="0.01" arc="180" color="#aaaaaa" roughness="0.2" metalness="1"></a-torus>
-    <a-cylinder position="0 -0.04 0.034" radius="0.014" height="0.005" color="#000"></a-cylinder>
-    <a-box position="0 -0.055 0.034" width="0.007" height="0.018" depth="0.005" color="#000"></a-box>
   </a-entity>
 
   <!-- MARKER INDEX 1 -> ASTRONAUTA (solo rilevamento posizione, visuale 2D overlay) -->
@@ -202,9 +197,6 @@
       msg.style.color = '#00ff88';
       btn.disabled = true;
       btn.style.opacity = '0.5';
-      
-      const shackle = document.querySelector('#shackle');
-      if (shackle) shackle.setAttribute('position', '0 0.11 0');
     } else {
       msg.textContent = '❌ Combinazione errata';
       msg.style.color = '#ff4444';
